@@ -10,8 +10,8 @@ class MainWindow : public open3d::visualization::gui::Window {
 
 public:
     MainWindow(const std::string& title, int width, int height);
-    MainWindow(const std::vector<std::shared_ptr<const open3d::geometry::Geometry>>&
-        geometries,
+    MainWindow(const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>&
+        point_clouds,
         const std::string& title,
         int width,
         int height,
@@ -20,11 +20,11 @@ public:
     virtual ~MainWindow();
 
     void SetTitle(const std::string& title);
-    void SetGeometry(std::shared_ptr<const open3d::geometry::Geometry> geometry);
-    //void AddGeometry(std::shared_ptr<const open3d::geometry::Geometry> geometry);
+    void SetCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud);
+    //void AddCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud);
 
     /// Loads asynchronously, will return immediately.
-    void LoadGeometry(const std::string& path);
+    void LoadCloud(const std::string& path);
 
     void ExportCurrentImage(const std::string& path);
 

@@ -263,7 +263,7 @@ struct MainWindow::Impl {
     } settings_;
 
     std::shared_ptr<open3d::geometry::PointCloud> loaded_pcd_;
-    //std::vector<open3d::geometry::PointCloud> loaded_clouds;
+    //std::vector<std::shared_ptr<open3d::geometry::PointCloud>> loaded_clouds;
 
     int app_menu_custom_items_index_ = -1;
     std::shared_ptr<gui::Menu> app_menu_;
@@ -283,7 +283,6 @@ struct MainWindow::Impl {
 
     void SetMaterialsToDefault() {
         settings_.view_->ShowFileMaterialEntry(false);
-
         settings_.model_.SetMaterialsToDefault();
         settings_.view_->EnableEstimateNormals(false);
         // model's OnChanged callback will get called (if set), which will
@@ -353,12 +352,6 @@ struct MainWindow::Impl {
         o3dscene->ShowGroundPlane(settings_.model_.GetShowGround(),
             rendering::Scene::GroundPlane::XZ);
 
-        // Does user want Point Cloud normals estimated?
-        if (settings_.model_.GetUserWantsEstimateNormals()) {
-            RunNormalEstimation();
-        }
-
-
         if (settings_.model_.GetBasicMode() != basic_mode_enabled_) {
             basic_mode_enabled_ = settings_.model_.GetBasicMode();
             SetBasicMode(basic_mode_enabled_);
@@ -377,23 +370,7 @@ struct MainWindow::Impl {
         UpdateMaterials(renderer, current_materials);
         UpdateSceneMaterial();
 
-        auto* view = scene_wgt_->GetRenderView();
-        switch (settings_.model_.GetMaterialType()) {
-        case GuiSettingsModel::MaterialType::LIT: {
-            view->SetMode(rendering::View::Mode::Color);
-            break;
-        }
-        case GuiSettingsModel::MaterialType::UNLIT: {
-            view->SetMode(rendering::View::Mode::Color);
-            break;
-        }
-        case GuiSettingsModel::MaterialType::NORMAL_MAP:
-            view->SetMode(rendering::View::Mode::Normals);
-            break;
-        case GuiSettingsModel::MaterialType::DEPTH:
-            view->SetMode(rendering::View::Mode::Depth);
-            break;
-        }
+        scene_wgt_->GetRenderView()->SetMode(rendering::View::Mode::Color);
 
         // Make sure scene redraws once material changes have been applied
         scene_wgt_->ForceRedraw();
@@ -439,82 +416,22 @@ private:
         render_scene->EnableSunLight(lighting.sun_enabled);
     }
 
-    void RunNormalEstimation() {
-        if (loaded_pcd_) {
-            gui::Application::GetInstance().PostToMainThread(
-                visualizer_, [this]() {
-                    auto& theme = visualizer_->GetTheme();
-                    auto loading_dlg =
-                        std::make_shared<gui::Dialog>("Loading");
-                    auto vert = std::make_shared<gui::Vert>(
-                        0, gui::Margins(theme.font_size));
-                    auto loading_text = std::string(
-                        "Estimating normals. Be patient. This may take "
-                        "a while. ");
-                    vert->AddChild(std::make_shared<gui::Label>(
-                        loading_text.c_str()));
-                    loading_dlg->AddChild(vert);
-                    visualizer_->ShowDialog(loading_dlg);
-                });
-
-            gui::Application::GetInstance().RunInThread([this]() {
-                loaded_pcd_->EstimateNormals();
-                loaded_pcd_->NormalizeNormals();
-
-                gui::Application::GetInstance().PostToMainThread(
-                    visualizer_, [this]() {
-                        auto scene3d = scene_wgt_->GetScene();
-                        scene3d->ClearGeometry();
-                        rendering::MaterialRecord mat;
-                        scene3d->AddGeometry(MODEL_NAME, loaded_pcd_.get(),
-                            mat);
-                        UpdateSceneMaterial();
-                    });
-                gui::Application::GetInstance().PostToMainThread(
-                    visualizer_, [this]() { visualizer_->CloseDialog(); });
-                });
-        }
-    }
-
     void UpdateSceneMaterial() {
-        switch (settings_.model_.GetMaterialType()) {
-        case GuiSettingsModel::MaterialType::LIT:
-            if (basic_mode_enabled_) {
-                rendering::MaterialRecord basic_mat(
-                    settings_.lit_material_);
-                ModifyMaterialForBasicMode(basic_mat);
-                scene_wgt_->GetScene()->UpdateMaterial(basic_mat);
-            }
-            else {
-                scene_wgt_->GetScene()->UpdateMaterial(
-                    settings_.lit_material_);
-            }
-            break;
-        case GuiSettingsModel::MaterialType::UNLIT:
-            if (basic_mode_enabled_) {
-                rendering::MaterialRecord basic_mat(
-                    settings_.unlit_material_);
-                ModifyMaterialForBasicMode(basic_mat);
-                scene_wgt_->GetScene()->UpdateMaterial(basic_mat);
-            }
-            else {
-                scene_wgt_->GetScene()->UpdateMaterial(
-                    settings_.unlit_material_);
-            }
-            break;
-        case GuiSettingsModel::MaterialType::NORMAL_MAP: {
-            settings_.normal_depth_material_.shader = "normals";
-            scene_wgt_->GetScene()->UpdateMaterial(
-                settings_.normal_depth_material_);
-        } break;
-        case GuiSettingsModel::MaterialType::DEPTH: {
-            settings_.normal_depth_material_.shader = "depth";
-            scene_wgt_->GetScene()->UpdateMaterial(
-                settings_.normal_depth_material_);
-        } break;
+        open3d::visualization::rendering::MaterialRecord material;
+        if (settings_.model_.GetMaterialType() == GuiSettingsModel::MaterialType::LIT) {
+            material = settings_.lit_material_;
+        }
+        else {
+            material = settings_.unlit_material_;
+        }
 
-        default:
-            break;
+        if (basic_mode_enabled_) {
+            rendering::MaterialRecord basic_mat(material);
+            ModifyMaterialForBasicMode(basic_mat);
+            scene_wgt_->GetScene()->UpdateMaterial(basic_mat);
+        }
+        else {
+            scene_wgt_->GetScene()->UpdateMaterial(material);
         }
     }
 
@@ -553,8 +470,8 @@ MainWindow::MainWindow(const std::string& title, int width, int height)
 }
 
 MainWindow::MainWindow(
-    const std::vector<std::shared_ptr<const open3d::geometry::Geometry>>
-    & geometries,
+    const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>
+    & point_clouds,
     const std::string& title,
     int width,
     int height,
@@ -563,10 +480,10 @@ MainWindow::MainWindow(
     : gui::Window(title, left, top, width, height),
     impl_(new MainWindow::Impl()) {
     Init();
-    SetGeometry(geometries[0]);  // also updates the camera
+    SetCloud(point_clouds[0]);  // also updates the camera
 
     // Create a message processor for incoming messages.
-    auto on_geometry = [this](std::shared_ptr<open3d::geometry::Geometry3D> geom,
+    auto on_geometry = [this](std::shared_ptr<open3d::geometry::PointCloud> geom,
         const std::string& path, int time,
         const std::string& layer) {
             // Rather than duplicating the logic to figure out the correct material,
@@ -736,44 +653,36 @@ void MainWindow::SetTitle(const std::string& title) {
 }
 
 // NOTE: Can only render point clouds
-void MainWindow::SetGeometry(std::shared_ptr<const open3d::geometry::Geometry> geometry) {
+void MainWindow::SetCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud) {
     auto scene3d = impl_->scene_wgt_->GetScene();
     scene3d->ClearGeometry();
 
     impl_->SetMaterialsToDefault();
 
     rendering::MaterialRecord loaded_material;
-    // NOTE: If a model was NOT loaded then these must be point clouds
-    std::shared_ptr<const open3d::geometry::Geometry> g = geometry;
 
     // If a point cloud or mesh has no vertex colors or a single uniform
     // color (usually white), then we want to display it normally, that
     // is, lit. But if the cloud/mesh has differing vertex colors, then
     // we assume that the vertex colors have the lighting value baked in
     // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-    if (g->GetGeometryType() ==
-        open3d::geometry::Geometry::GeometryType::PointCloud) {
-        auto pcd = std::static_pointer_cast<const open3d::geometry::PointCloud>(g);
+    if (point_cloud->HasNormals()) {
+        loaded_material.shader = "defaultLit";
+    }
+    else if (point_cloud->HasColors() && !PointCloudHasUniformColor(*point_cloud)) {
+        loaded_material.shader = "defaultUnlit";
+    }
+    else {
+        loaded_material.shader = "defaultLit";
+    }
 
-        if (pcd->HasNormals()) {
-            loaded_material.shader = "defaultLit";
-        }
-        else if (pcd->HasColors() && !PointCloudHasUniformColor(*pcd)) {
-            loaded_material.shader = "defaultUnlit";
-        }
-        else {
-            loaded_material.shader = "defaultLit";
-        }
+    scene3d->AddGeometry(MODEL_NAME, point_cloud.get(), loaded_material);
 
-        scene3d->AddGeometry(MODEL_NAME, pcd.get(), loaded_material);
-
-        impl_->settings_.model_.SetDisplayingPointClouds(true);
-        impl_->settings_.view_->EnableEstimateNormals(true);
-        if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
-                auto& profile =
-                    GuiSettingsModel::GetDefaultPointCloudLightingProfile();
-                impl_->settings_.model_.SetLightingProfile(profile);
-        }
+    impl_->settings_.model_.SetDisplayingPointClouds(true);
+    if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
+            auto& profile =
+                GuiSettingsModel::GetDefaultPointCloudLightingProfile();
+            impl_->settings_.model_.SetLightingProfile(profile);
     }
 
     auto type = impl_->settings_.model_.GetMaterialType();
@@ -837,7 +746,7 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
     Super::Layout(context);
 }
 
-void MainWindow::LoadGeometry(const std::string& path) {
+void MainWindow::LoadCloud(const std::string& path) {
     auto progressbar = std::make_shared<gui::ProgressBar>();
     gui::Application::GetInstance().PostToMainThread(this, [this, path,
         progressbar]() {
@@ -865,15 +774,12 @@ void MainWindow::LoadGeometry(const std::string& path) {
 
         auto geometry_type = open3d::io::ReadFileGeometryType(path);
 
-        auto geometry = std::shared_ptr<open3d::geometry::Geometry3D>();
         auto cloud = std::make_shared<open3d::geometry::PointCloud>();
         bool success = false;
-        const float ioProgressAmount = 0.5f;
         try {
             open3d::io::ReadPointCloudOption opt;
-            opt.update_progress = [ioProgressAmount,
-                UpdateProgress](double percent) -> bool {
-                UpdateProgress(ioProgressAmount * float(percent / 100.0));
+            opt.update_progress = [UpdateProgress](double percent) -> bool {
+                UpdateProgress(float(percent / 100.0));
                 return true;
             };
             success = open3d::io::ReadPointCloud(path, *cloud, opt);
@@ -883,14 +789,6 @@ void MainWindow::LoadGeometry(const std::string& path) {
         }
         if (success) {
             open3d::utility::LogInfo("Successfully read {}", path.c_str());
-            UpdateProgress(ioProgressAmount);
-            if (!cloud->HasNormals() && !cloud->HasColors()) {
-                cloud->EstimateNormals();
-            }
-            UpdateProgress(0.666f);
-            cloud->NormalizeNormals();
-            UpdateProgress(0.75f);
-            geometry = cloud;
             impl_->loaded_pcd_ = cloud;
         }
         else {
@@ -898,10 +796,10 @@ void MainWindow::LoadGeometry(const std::string& path) {
             cloud.reset();
         }
 
-        if (geometry) {
+        if (cloud) {
             gui::Application::GetInstance().PostToMainThread(
-                this, [this, geometry]() {
-                    SetGeometry(geometry);
+                this, [this, cloud]() {
+                    SetCloud(cloud);
                     CloseDialog();
                 });
         }
@@ -1049,5 +947,5 @@ void MainWindow::OnDragDropped(const char* path) {
     auto title = std::string("Open3D - ") + path;
     this->SetTitle(title);
     auto vis = this;
-    vis->LoadGeometry(path);
+    vis->LoadCloud(path);
 }
