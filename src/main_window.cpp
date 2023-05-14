@@ -241,12 +241,11 @@ enum MenuId {
 };
 
 struct MainWindow::Impl {
-    MainWindow* visualizer_;
+    MainWindow* visualizer_ = nullptr;
 
     std::shared_ptr<gui::SceneWidget> scene_wgt_;
     std::shared_ptr<gui::VGrid> help_keys_;
     std::shared_ptr<gui::VGrid> help_camera_;
-    //std::shared_ptr<MessageProcessor> message_processor_;
 
     struct Settings {
         rendering::MaterialRecord lit_material_;
@@ -263,16 +262,14 @@ struct MainWindow::Impl {
         std::shared_ptr<GuiSettingsView> view_;
     } settings_;
 
-    rendering::TriangleMeshModel loaded_model_;
-    rendering::TriangleMeshModel basic_model_;
-    std::shared_ptr<open3d::geometry::LineSet> wireframe_model_;
     std::shared_ptr<open3d::geometry::PointCloud> loaded_pcd_;
+    //std::vector<open3d::geometry::PointCloud> loaded_clouds;
+
     int app_menu_custom_items_index_ = -1;
     std::shared_ptr<gui::Menu> app_menu_;
 
     bool sun_follows_camera_ = false;
     bool basic_mode_enabled_ = false;
-    bool wireframe_enabled_ = false;
 
     void InitializeMaterials(rendering::Renderer& renderer,
         const std::string& resource_path) {
@@ -291,26 +288,6 @@ struct MainWindow::Impl {
         settings_.view_->EnableEstimateNormals(false);
         // model's OnChanged callback will get called (if set), which will
         // update everything.
-    }
-
-    bool SetIBL(rendering::Renderer& renderer, const std::string& path) {
-        auto* render_scene = scene_wgt_->GetScene()->GetScene();
-        std::string ibl_name(path);
-        if (ibl_name.empty()) {
-            ibl_name =
-                std::string(
-                    gui::Application::GetInstance().GetResourcePath()) +
-                "/" + GuiSettingsModel::DEFAULT_IBL;
-        }
-        if (ibl_name.find("_ibl.ktx") != std::string::npos) {
-            ibl_name = ibl_name.substr(0, ibl_name.size() - 8);
-        }
-        render_scene->SetIndirectLight(ibl_name);
-        float intensity = render_scene->GetIndirectLightIntensity();
-        render_scene->SetIndirectLightIntensity(intensity);
-        scene_wgt_->ForceRedraw();
-
-        return true;
     }
 
     void SetMouseControls(gui::Window& window,
@@ -343,47 +320,6 @@ struct MainWindow::Impl {
         basic_mat.sRGB_vertex_color = false;
     }
 
-    void SetBasicModeGeometry(bool enable) {
-        auto o3dscene = scene_wgt_->GetScene();
-
-        // Only need to modify TriangleMesh - basic mode for point clouds
-        // requires only change to their materials which are handled elsewhere
-        if (loaded_model_.meshes_.size() > 0) {
-            if (enable) {
-                if (basic_model_.meshes_.size() == 0) {
-                    for (auto& mat : loaded_model_.materials_) {
-                        rendering::MaterialRecord m(mat);
-                        ModifyMaterialForBasicMode(m);
-                        basic_model_.materials_.emplace_back(m);
-                    }
-                    for (auto& mi : loaded_model_.meshes_) {
-                        auto new_mesh =
-                            std::make_shared<open3d::geometry::TriangleMesh>(
-                                mi.mesh->vertices_,
-                                mi.mesh->triangles_);
-                        new_mesh->vertex_colors_ = mi.mesh->vertex_colors_;
-                        if (mi.mesh->HasTriangleNormals()) {
-                            new_mesh->triangle_normals_ =
-                                mi.mesh->triangle_normals_;
-                        }
-                        else {
-                            new_mesh->ComputeTriangleNormals();
-                        }
-                        basic_model_.meshes_.push_back(
-                            { new_mesh, mi.mesh_name, mi.material_idx });
-                    }
-                    o3dscene->AddModel(INSPECT_MODEL_NAME, basic_model_);
-                }
-                o3dscene->ShowGeometry(INSPECT_MODEL_NAME, true);
-                o3dscene->ShowGeometry(MODEL_NAME, false);
-            }
-            else {
-                o3dscene->ShowGeometry(INSPECT_MODEL_NAME, false);
-                o3dscene->ShowGeometry(MODEL_NAME, true);
-            }
-        }
-    }
-
     void SetBasicMode(bool enable) {
         auto o3dscene = scene_wgt_->GetScene();
         auto view = o3dscene->GetView();
@@ -401,9 +337,6 @@ struct MainWindow::Impl {
             view->SetPostProcessing(true);
             view->SetShadowing(true, rendering::View::ShadowType::kPCF);
         }
-
-        // Update geometry for basic mode
-        SetBasicModeGeometry(enable);
     }
 
     void UpdateFromModel(rendering::Renderer& renderer, bool material_changed) {
@@ -425,41 +358,6 @@ struct MainWindow::Impl {
             RunNormalEstimation();
         }
 
-        // o3dscene->ShowGeometry(WIREFRAME_NAME, true);
-        if (settings_.model_.GetWireframeMode() != wireframe_enabled_) {
-            wireframe_enabled_ = settings_.model_.GetWireframeMode();
-            if (wireframe_enabled_ && !loaded_pcd_) {
-                // create wireframe line set
-                if (!wireframe_model_) {
-                    wireframe_model_ = std::make_shared<open3d::geometry::LineSet>();
-                    for (const auto& mi : loaded_model_.meshes_) {
-                        auto lines = open3d::geometry::LineSet::CreateFromTriangleMesh(
-                            *mi.mesh);
-                        *wireframe_model_ += *lines;
-                    }
-                }
-                // Add to scene
-                rendering::MaterialRecord wireframe_mat;
-                wireframe_mat.shader = "unlitLine";
-                wireframe_mat.line_width = 2.f;
-                wireframe_mat.base_color = { 0.f, 0.3f, 1.f, 1.f };
-                wireframe_mat.emissive_color = { 10000.f, 10000.f, 10000.f, 1.f };
-                o3dscene->AddGeometry(WIREFRAME_NAME, wireframe_model_.get(),
-                    wireframe_mat);
-                // o3dscene->ShowGeometry(WIREFRAME_NAME, true);
-                o3dscene->ShowGeometry(MODEL_NAME, false);
-                o3dscene->GetView()->SetWireframe(true);
-                o3dscene->SetBackground({ 0.1f, 0.1f, 0.1f, 1.f });
-            }
-            else {
-                o3dscene->RemoveGeometry(WIREFRAME_NAME);
-                o3dscene->ShowGeometry(MODEL_NAME, true);
-                o3dscene->GetView()->SetWireframe(false);
-                auto bcolor = settings_.model_.GetBackgroundColor();
-                o3dscene->SetBackground(
-                    { bcolor.x(), bcolor.y(), bcolor.z(), 1.f });
-            }
-        }
 
         if (settings_.model_.GetBasicMode() != basic_mode_enabled_) {
             basic_mode_enabled_ = settings_.model_.GetBasicMode();
@@ -474,18 +372,10 @@ struct MainWindow::Impl {
         // Bail early if there were no material property changes
         if (!material_changed) return;
 
+        // update matieral
         auto& current_materials = settings_.model_.GetCurrentMaterials();
-        if (settings_.model_.GetMaterialType() ==
-            GuiSettingsModel::MaterialType::LIT &&
-            current_materials.lit_name ==
-            GuiSettingsModel::MATERIAL_FROM_FILE_NAME &&
-            !basic_mode_enabled_) {
-            o3dscene->UpdateModelMaterial(MODEL_NAME, loaded_model_);
-        }
-        else {
-            UpdateMaterials(renderer, current_materials);
-            UpdateSceneMaterial();
-        }
+        UpdateMaterials(renderer, current_materials);
+        UpdateSceneMaterial();
 
         auto* view = scene_wgt_->GetRenderView();
         switch (settings_.model_.GetMaterialType()) {
@@ -514,11 +404,6 @@ private:
         const GuiSettingsModel::LightingProfile& lighting) {
         auto scene = scene_wgt_->GetScene();
         auto* render_scene = scene->GetScene();
-        if (lighting.use_default_ibl &&
-            !settings_.model_.GetUserHasCustomizedLighting()) {
-            this->SetIBL(renderer, "");
-        }
-
         if (sun_follows_camera_ != settings_.model_.GetSunFollowsCamera()) {
             sun_follows_camera_ = settings_.model_.GetSunFollowsCamera();
             if (sun_follows_camera_) {
@@ -660,28 +545,6 @@ private:
         // Update normal/depth from GUI
         normal_depth.point_size = materials.point_size;
     }
-
-    void OnNewIBL(Window& window, const char* name) {
-        std::string path = gui::Application::GetInstance().GetResourcePath();
-        path += std::string("/") + name + "_ibl.ktx";
-        if (!SetIBL(window.GetRenderer(), path)) {
-            // must be the "Custom..." option
-            auto dlg = std::make_shared<gui::FileDialog>(
-                gui::FileDialog::Mode::OPEN, "Open HDR Map",
-                window.GetTheme());
-            dlg->AddFilter(".ktx", "Khronos Texture (.ktx)");
-            dlg->SetOnCancel([&window]() { window.CloseDialog(); });
-            dlg->SetOnDone([this, &window](const char* path) {
-                window.CloseDialog();
-                SetIBL(window.GetRenderer(), path);
-                // We need to set the "custom" bit, so just call the current
-                // profile a custom profile.
-                settings_.model_.SetCustomLighting(
-                    settings_.model_.GetLighting());
-                });
-            window.ShowDialog(dlg);
-        }
-    }
 };
 
 MainWindow::MainWindow(const std::string& title, int width, int height)
@@ -700,7 +563,7 @@ MainWindow::MainWindow(
     : gui::Window(title, left, top, width, height),
     impl_(new MainWindow::Impl()) {
     Init();
-    SetGeometry(geometries[0], false);  // also updates the camera
+    SetGeometry(geometries[0]);  // also updates the camera
 
     // Create a message processor for incoming messages.
     auto on_geometry = [this](std::shared_ptr<open3d::geometry::Geometry3D> geom,
@@ -844,25 +707,7 @@ void MainWindow::Init() {
     // ... lighting and materials
     settings.view_ = std::make_shared<GuiSettingsView>(
         settings.model_, theme, resource_path, [this](const char* name) {
-            if (std::string(name) ==
-                std::string(GuiSettingsModel::CUSTOM_IBL)) {
-                auto dlg = std::make_shared<gui::FileDialog>(
-                    gui::FileDialog::Mode::OPEN, "Open HDR Map",
-                    GetTheme());
-                dlg->AddFilter(".ktx", "Khronos Texture (.ktx)");
-                dlg->SetOnCancel([this]() { CloseDialog(); });
-                dlg->SetOnDone([this](const char* path) {
-                    CloseDialog();
-                    impl_->SetIBL(GetRenderer(), path);
-                    });
-                ShowDialog(dlg);
-            }
-            else {
-                std::string resource_path =
-                    gui::Application::GetInstance().GetResourcePath();
-                impl_->SetIBL(GetRenderer(),
-                    resource_path + "/" + name + "_ibl.ktx");
-            }
+            // Do not use custom light maps
         });
     settings.model_.SetOnChanged([this](bool material_type_changed) {
         impl_->settings_.view_->Update();
@@ -890,51 +735,44 @@ void MainWindow::SetTitle(const std::string& title) {
     Super::SetTitle(title.c_str());
 }
 
-void MainWindow::SetGeometry(
-    std::shared_ptr<const open3d::geometry::Geometry> geometry, bool loaded_model) {
+// NOTE: Can only render point clouds
+void MainWindow::SetGeometry(std::shared_ptr<const open3d::geometry::Geometry> geometry) {
     auto scene3d = impl_->scene_wgt_->GetScene();
     scene3d->ClearGeometry();
 
     impl_->SetMaterialsToDefault();
 
     rendering::MaterialRecord loaded_material;
-    if (loaded_model) {
-        scene3d->AddModel(MODEL_NAME, impl_->loaded_model_);
-        impl_->settings_.model_.SetDisplayingPointClouds(false);
-        loaded_material.shader = "defaultLit";
-    }
-    else {
-        // NOTE: If a model was NOT loaded then these must be point clouds
-        std::shared_ptr<const open3d::geometry::Geometry> g = geometry;
+    // NOTE: If a model was NOT loaded then these must be point clouds
+    std::shared_ptr<const open3d::geometry::Geometry> g = geometry;
 
-        // If a point cloud or mesh has no vertex colors or a single uniform
-        // color (usually white), then we want to display it normally, that
-        // is, lit. But if the cloud/mesh has differing vertex colors, then
-        // we assume that the vertex colors have the lighting value baked in
-        // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-        if (g->GetGeometryType() ==
-            open3d::geometry::Geometry::GeometryType::PointCloud) {
-            auto pcd = std::static_pointer_cast<const open3d::geometry::PointCloud>(g);
+    // If a point cloud or mesh has no vertex colors or a single uniform
+    // color (usually white), then we want to display it normally, that
+    // is, lit. But if the cloud/mesh has differing vertex colors, then
+    // we assume that the vertex colors have the lighting value baked in
+    // (for example, fountain.ply at http://qianyi.info/scenedata.html)
+    if (g->GetGeometryType() ==
+        open3d::geometry::Geometry::GeometryType::PointCloud) {
+        auto pcd = std::static_pointer_cast<const open3d::geometry::PointCloud>(g);
 
-            if (pcd->HasNormals()) {
-                loaded_material.shader = "defaultLit";
-            }
-            else if (pcd->HasColors() && !PointCloudHasUniformColor(*pcd)) {
-                loaded_material.shader = "defaultUnlit";
-            }
-            else {
-                loaded_material.shader = "defaultLit";
-            }
+        if (pcd->HasNormals()) {
+            loaded_material.shader = "defaultLit";
+        }
+        else if (pcd->HasColors() && !PointCloudHasUniformColor(*pcd)) {
+            loaded_material.shader = "defaultUnlit";
+        }
+        else {
+            loaded_material.shader = "defaultLit";
+        }
 
-            scene3d->AddGeometry(MODEL_NAME, pcd.get(), loaded_material);
+        scene3d->AddGeometry(MODEL_NAME, pcd.get(), loaded_material);
 
-            impl_->settings_.model_.SetDisplayingPointClouds(true);
-            impl_->settings_.view_->EnableEstimateNormals(true);
-            if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
+        impl_->settings_.model_.SetDisplayingPointClouds(true);
+        impl_->settings_.view_->EnableEstimateNormals(true);
+        if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
                 auto& profile =
                     GuiSettingsModel::GetDefaultPointCloudLightingProfile();
                 impl_->settings_.model_.SetLightingProfile(profile);
-            }
         }
     }
 
@@ -953,14 +791,7 @@ void MainWindow::SetGeometry(
 
     // Setup UI for loaded model/point cloud
     impl_->settings_.model_.UnsetCustomDefaultColor();
-    if (loaded_model) {
-        impl_->settings_.view_->ShowFileMaterialEntry(true);
-        impl_->settings_.model_.SetCurrentMaterials(
-            GuiSettingsModel::MATERIAL_FROM_FILE_NAME);
-    }
-    else {
-        impl_->settings_.view_->ShowFileMaterialEntry(false);
-    }
+    impl_->settings_.view_->ShowFileMaterialEntry(false);
     impl_->settings_.view_->Update();  // make sure prefab material is correct
 
     auto& bounds = scene3d->GetBoundingBox();
@@ -969,9 +800,7 @@ void MainWindow::SetGeometry(
 
     // Setup for raw mode if enabled...
     if (impl_->basic_mode_enabled_) {
-        impl_->SetBasicModeGeometry(true);
-        scene3d->GetScene()->SetSunLightDirection(
-            scene3d->GetCamera()->GetForwardVector());
+        scene3d->GetScene()->SetSunLightDirection(scene3d->GetCamera()->GetForwardVector());
     }
 
     // Make sure scene is redrawn
@@ -1008,12 +837,6 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
     Super::Layout(context);
 }
 
-bool MainWindow::SetIBL(const char* path) {
-    auto result = impl_->SetIBL(GetRenderer(), path);
-    PostRedraw();
-    return result;
-}
-
 void MainWindow::LoadGeometry(const std::string& path) {
     auto progressbar = std::make_shared<gui::ProgressBar>();
     gui::Application::GetInstance().PostToMainThread(this, [this, path,
@@ -1038,75 +861,47 @@ void MainWindow::LoadGeometry(const std::string& path) {
         };
 
         // clear current model
-        impl_->loaded_model_.meshes_.clear();
-        impl_->loaded_model_.materials_.clear();
-        impl_->basic_model_.meshes_.clear();
-        impl_->basic_model_.materials_.clear();
-        impl_->wireframe_model_.reset();
         impl_->loaded_pcd_.reset();
 
         auto geometry_type = open3d::io::ReadFileGeometryType(path);
 
-        bool model_success = false;
-        if (geometry_type & open3d::io::CONTAINS_TRIANGLES) {
-            const float ioProgressAmount = 1.0f;
-            try {
-                open3d::io::ReadTriangleModelOptions opt;
-                opt.update_progress = [ioProgressAmount,
-                    UpdateProgress](double percent) -> bool {
-                    UpdateProgress(ioProgressAmount * float(percent / 100.0));
-                    return true;
-                };
-                model_success =
-                    open3d::io::ReadTriangleModel(path, impl_->loaded_model_, opt);
-            }
-            catch (...) {
-                model_success = false;
-            }
-        }
-        if (!model_success) {
-            open3d::utility::LogInfo("{} appears to be a point cloud", path.c_str());
-        }
-
         auto geometry = std::shared_ptr<open3d::geometry::Geometry3D>();
-        if (!model_success) {
-            auto cloud = std::make_shared<open3d::geometry::PointCloud>();
-            bool success = false;
-            const float ioProgressAmount = 0.5f;
-            try {
-                open3d::io::ReadPointCloudOption opt;
-                opt.update_progress = [ioProgressAmount,
-                    UpdateProgress](double percent) -> bool {
-                    UpdateProgress(ioProgressAmount * float(percent / 100.0));
-                    return true;
-                };
-                success = open3d::io::ReadPointCloud(path, *cloud, opt);
+        auto cloud = std::make_shared<open3d::geometry::PointCloud>();
+        bool success = false;
+        const float ioProgressAmount = 0.5f;
+        try {
+            open3d::io::ReadPointCloudOption opt;
+            opt.update_progress = [ioProgressAmount,
+                UpdateProgress](double percent) -> bool {
+                UpdateProgress(ioProgressAmount * float(percent / 100.0));
+                return true;
+            };
+            success = open3d::io::ReadPointCloud(path, *cloud, opt);
+        }
+        catch (...) {
+            success = false;
+        }
+        if (success) {
+            open3d::utility::LogInfo("Successfully read {}", path.c_str());
+            UpdateProgress(ioProgressAmount);
+            if (!cloud->HasNormals() && !cloud->HasColors()) {
+                cloud->EstimateNormals();
             }
-            catch (...) {
-                success = false;
-            }
-            if (success) {
-                open3d::utility::LogInfo("Successfully read {}", path.c_str());
-                UpdateProgress(ioProgressAmount);
-                if (!cloud->HasNormals() && !cloud->HasColors()) {
-                    cloud->EstimateNormals();
-                }
-                UpdateProgress(0.666f);
-                cloud->NormalizeNormals();
-                UpdateProgress(0.75f);
-                geometry = cloud;
-                impl_->loaded_pcd_ = cloud;
-            }
-            else {
-                open3d::utility::LogWarning("Failed to read points {}", path.c_str());
-                cloud.reset();
-            }
+            UpdateProgress(0.666f);
+            cloud->NormalizeNormals();
+            UpdateProgress(0.75f);
+            geometry = cloud;
+            impl_->loaded_pcd_ = cloud;
+        }
+        else {
+            open3d::utility::LogWarning("Failed to read points {}", path.c_str());
+            cloud.reset();
         }
 
-        if (model_success || geometry) {
+        if (geometry) {
             gui::Application::GetInstance().PostToMainThread(
-                this, [this, model_success, geometry]() {
-                    SetGeometry(geometry, model_success);
+                this, [this, geometry]() {
+                    SetGeometry(geometry);
                     CloseDialog();
                 });
         }
@@ -1118,7 +913,7 @@ void MainWindow::LoadGeometry(const std::string& path) {
                     ShowMessageBox("Error", msg.c_str());
                 });
         }
-        });
+    });
 }
 
 void MainWindow::ExportCurrentImage(const std::string& path) {
