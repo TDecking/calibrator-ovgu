@@ -262,8 +262,8 @@ struct MainWindow::Impl {
         std::shared_ptr<GuiSettingsView> view_;
     } settings_;
 
-    std::shared_ptr<open3d::geometry::PointCloud> loaded_pcd_;
-    //std::vector<std::shared_ptr<open3d::geometry::PointCloud>> loaded_clouds;
+    std::vector<std::shared_ptr<const open3d::geometry::PointCloud>> loaded_clouds;
+    std::vector<std::string> loaded_cloud_names;
 
     int app_menu_custom_items_index_ = -1;
     std::shared_ptr<gui::Menu> app_menu_;
@@ -480,7 +480,7 @@ MainWindow::MainWindow(
     : gui::Window(title, left, top, width, height),
     impl_(new MainWindow::Impl()) {
     Init();
-    SetCloud(point_clouds[0]);  // also updates the camera
+    SetClouds(point_clouds);  // also updates the camera
 
     // Create a message processor for incoming messages.
     auto on_geometry = [this](std::shared_ptr<open3d::geometry::PointCloud> geom,
@@ -493,7 +493,6 @@ MainWindow::MainWindow(
                 rendering::MaterialRecord());
             impl_->UpdateFromModel(GetRenderer(), true);
     };
-    //impl_->message_processor_ = std::make_shared<MessageProcessor>(this, on_geometry);
 }
 
 void MainWindow::Init() {
@@ -652,8 +651,8 @@ void MainWindow::SetTitle(const std::string& title) {
     Super::SetTitle(title.c_str());
 }
 
-// NOTE: Can only render point clouds
-void MainWindow::SetCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud) {
+
+void MainWindow::SetClouds(const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>& point_clouds) {
     auto scene3d = impl_->scene_wgt_->GetScene();
     scene3d->ClearGeometry();
 
@@ -661,28 +660,28 @@ void MainWindow::SetCloud(std::shared_ptr<const open3d::geometry::PointCloud> po
 
     rendering::MaterialRecord loaded_material;
 
-    // If a point cloud or mesh has no vertex colors or a single uniform
-    // color (usually white), then we want to display it normally, that
-    // is, lit. But if the cloud/mesh has differing vertex colors, then
-    // we assume that the vertex colors have the lighting value baked in
-    // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-    if (point_cloud->HasNormals()) {
-        loaded_material.shader = "defaultLit";
+    for (int i = 0; i < point_clouds.size(); i++) {
+        // If a point cloud or mesh has no vertex colors or a single uniform
+        // color (usually white), then we want to display it normally, that
+        // is, lit. But if the cloud/mesh has differing vertex colors, then
+        // we assume that the vertex colors have the lighting value baked in
+        // (for example, fountain.ply at http://qianyi.info/scenedata.html)
+        auto point_cloud = point_clouds.at(i);
+        if (point_cloud->HasColors() && !PointCloudHasUniformColor(*point_cloud)) {
+            loaded_material.shader = "defaultUnlit";
+        }
+        else {
+            loaded_material.shader = "defaultLit";
+        }
+        const std::string name = impl_->loaded_cloud_names.at(i);
+        scene3d->AddGeometry(name, point_clouds.at(i).get(), loaded_material);
     }
-    else if (point_cloud->HasColors() && !PointCloudHasUniformColor(*point_cloud)) {
-        loaded_material.shader = "defaultUnlit";
-    }
-    else {
-        loaded_material.shader = "defaultLit";
-    }
-
-    scene3d->AddGeometry(MODEL_NAME, point_cloud.get(), loaded_material);
 
     impl_->settings_.model_.SetDisplayingPointClouds(true);
     if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
-            auto& profile =
-                GuiSettingsModel::GetDefaultPointCloudLightingProfile();
-            impl_->settings_.model_.SetLightingProfile(profile);
+        auto& profile =
+            GuiSettingsModel::GetDefaultPointCloudLightingProfile();
+        impl_->settings_.model_.SetLightingProfile(profile);
     }
 
     auto type = impl_->settings_.model_.GetMaterialType();
@@ -769,9 +768,6 @@ void MainWindow::LoadCloud(const std::string& path) {
                 [progressbar, value]() { progressbar->SetValue(value); });
         };
 
-        // clear current model
-        impl_->loaded_pcd_.reset();
-
         auto geometry_type = open3d::io::ReadFileGeometryType(path);
 
         auto cloud = std::make_shared<open3d::geometry::PointCloud>();
@@ -789,7 +785,8 @@ void MainWindow::LoadCloud(const std::string& path) {
         }
         if (success) {
             open3d::utility::LogInfo("Successfully read {}", path.c_str());
-            impl_->loaded_pcd_ = cloud;
+            impl_->loaded_clouds.push_back(cloud);
+            impl_->loaded_cloud_names.push_back(std::string(path));
         }
         else {
             open3d::utility::LogWarning("Failed to read points {}", path.c_str());
@@ -797,9 +794,10 @@ void MainWindow::LoadCloud(const std::string& path) {
         }
 
         if (cloud) {
+            const auto& clouds = impl_->loaded_clouds;
             gui::Application::GetInstance().PostToMainThread(
-                this, [this, cloud]() {
-                    SetCloud(cloud);
+                this, [this, clouds]() {
+                    SetClouds(clouds);
                     CloseDialog();
                 });
         }

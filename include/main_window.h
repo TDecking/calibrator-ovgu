@@ -20,8 +20,7 @@ public:
     virtual ~MainWindow();
 
     void SetTitle(const std::string& title);
-    void SetCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud);
-    //void AddCloud(std::shared_ptr<const open3d::geometry::PointCloud> point_cloud);
+    void MainWindow::SetClouds(const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>& point_clouds);
 
     /// Loads asynchronously, will return immediately.
     void LoadCloud(const std::string& path);
