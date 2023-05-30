@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 
 project(Calibrator LANGUAGES C CXX)
 
+set (CMAKE_CXX_STANDARD 17)
+
 option(GLIBCXX_USE_CXX11_ABI   "Set -D_GLIBCXX_USE_CXX11_ABI=1"       OFF)
 option(STATIC_WINDOWS_RUNTIME  "Use static (MT/MTd) Windows runtime"  ON )
 
@@ -25,8 +27,11 @@ endif()
 add_executable(calibrator)
 target_include_directories(calibrator PRIVATE include)
 target_link_libraries(calibrator PRIVATE Open3D::Open3D)
-target_sources(calibrator PRIVATE src/main.cpp)
-target_sources(calibrator PRIVATE src/main_window.cpp)
+target_sources(calibrator PRIVATE
+    src/main.cpp
+    src/main_window.cpp
+    src/data.cpp
+)
 
 if(WIN32)
     get_target_property(open3d_type Open3D::Open3D TYPE)
