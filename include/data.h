@@ -8,11 +8,6 @@
 
 class Entry {
     /// <summary>
-    /// The file path from which the data originates.
-    /// </summary>
-    const std::string path;
-
-    /// <summary>
     /// The original data.
     /// </summary>
     const open3d::geometry::PointCloud base;
@@ -29,6 +24,12 @@ class Entry {
     std::vector<Eigen::Matrix4d> transformations;
 
 public:
+    /// <summary>
+    /// The file path from which the data originates.
+    /// Also used to disambiguate entries for rendering.
+    /// </summary>
+    const std::string path;
+
     /// <summary>
     /// The name of the dataset.
     /// </summary>
@@ -59,6 +60,12 @@ public:
     /// </summary>
     /// <returns>The removed transformation, if one was present.</returns>
     std::optional<Eigen::Matrix4d> undo_transform();
+
+    /// <summary>
+    /// Return a read_only reference to the transformed data.
+    /// </summary>
+    /// <returns></returns>
+    const open3d::geometry::PointCloud& get_transformed();
 
 private:
     /// <summary>

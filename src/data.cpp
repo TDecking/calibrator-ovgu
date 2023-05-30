@@ -61,10 +61,9 @@ open3d::geometry::PointCloud load(std::string path, std::function<void(double)> 
 Entry::Entry(const std::string path, std::function<void(double)> UpdateProgress):
     path(path),
     base(load(path, UpdateProgress)),
-    transformed(),
+    transformed(base),
     transformations(),
     name() {
-    recalculate_transform();
 }
 
 void Entry::do_transform(Eigen::Matrix4d transformation) {
@@ -81,4 +80,8 @@ std::optional<Eigen::Matrix4d> Entry::undo_transform() {
     transformations.pop_back();
     recalculate_transform();
     return result;
+}
+
+const open3d::geometry::PointCloud& Entry::get_transformed() {
+    return transformed;
 }

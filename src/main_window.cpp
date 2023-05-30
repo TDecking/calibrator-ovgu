@@ -262,8 +262,7 @@ struct MainWindow::Impl {
         std::shared_ptr<GuiSettingsView> view_;
     } settings_;
 
-    std::vector<std::shared_ptr<const open3d::geometry::PointCloud>> loaded_clouds;
-    std::vector<std::string> loaded_cloud_names;
+    std::vector<std::shared_ptr<Entry>> loaded_entries;
 
     int app_menu_custom_items_index_ = -1;
     std::shared_ptr<gui::Menu> app_menu_;
@@ -470,8 +469,8 @@ MainWindow::MainWindow(const std::string& title, int width, int height)
 }
 
 MainWindow::MainWindow(
-    const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>
-    & point_clouds,
+    const std::vector<std::shared_ptr<Entry>>
+    & entries,
     const std::string& title,
     int width,
     int height,
@@ -480,7 +479,7 @@ MainWindow::MainWindow(
     : gui::Window(title, left, top, width, height),
     impl_(new MainWindow::Impl()) {
     Init();
-    SetClouds(point_clouds);  // also updates the camera
+    SetEntries(entries);  // also updates the camera
 
     // Create a message processor for incoming messages.
     auto on_geometry = [this](std::shared_ptr<open3d::geometry::PointCloud> geom,
@@ -652,7 +651,7 @@ void MainWindow::SetTitle(const std::string& title) {
 }
 
 
-void MainWindow::SetClouds(const std::vector<std::shared_ptr<const open3d::geometry::PointCloud>>& point_clouds) {
+void MainWindow::SetEntries(const std::vector<std::shared_ptr<Entry>>& point_clouds) {
     auto scene3d = impl_->scene_wgt_->GetScene();
     scene3d->ClearGeometry();
 
@@ -666,15 +665,15 @@ void MainWindow::SetClouds(const std::vector<std::shared_ptr<const open3d::geome
         // is, lit. But if the cloud/mesh has differing vertex colors, then
         // we assume that the vertex colors have the lighting value baked in
         // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-        auto point_cloud = point_clouds.at(i);
-        if (point_cloud->HasColors() && !PointCloudHasUniformColor(*point_cloud)) {
+        auto& entry = impl_->loaded_entries.at(i);
+        const open3d::geometry::PointCloud& cloud = entry->get_transformed();
+        if (cloud.HasColors() && !PointCloudHasUniformColor(cloud)) {
             loaded_material.shader = "defaultUnlit";
         }
         else {
             loaded_material.shader = "defaultLit";
         }
-        const std::string name = impl_->loaded_cloud_names.at(i);
-        scene3d->AddGeometry(name, point_clouds.at(i).get(), loaded_material);
+        scene3d->AddGeometry(entry->path, &cloud, loaded_material);
     }
 
     impl_->settings_.model_.SetDisplayingPointClouds(true);
@@ -768,36 +767,21 @@ void MainWindow::LoadCloud(const std::string& path) {
                 [progressbar, value]() { progressbar->SetValue(value); });
         };
 
-        auto geometry_type = open3d::io::ReadFileGeometryType(path);
+        std::shared_ptr<Entry> entry = NULL;
 
-        auto cloud = std::make_shared<open3d::geometry::PointCloud>();
-        bool success = false;
         try {
-            open3d::io::ReadPointCloudOption opt;
-            opt.update_progress = [UpdateProgress](double percent) -> bool {
-                UpdateProgress(float(percent / 100.0));
-                return true;
-            };
-            success = open3d::io::ReadPointCloud(path, *cloud, opt);
+            entry = std::make_shared<Entry>(path, UpdateProgress);
+            this->impl_->loaded_entries.push_back(entry);
         }
         catch (...) {
-            success = false;
-        }
-        if (success) {
-            open3d::utility::LogInfo("Successfully read {}", path.c_str());
-            impl_->loaded_clouds.push_back(cloud);
-            impl_->loaded_cloud_names.push_back(std::string(path));
-        }
-        else {
-            open3d::utility::LogWarning("Failed to read points {}", path.c_str());
-            cloud.reset();
+            entry.reset();
         }
 
-        if (cloud) {
-            const auto& clouds = impl_->loaded_clouds;
+        if (entry) {
+            const auto& entries = impl_->loaded_entries;
             gui::Application::GetInstance().PostToMainThread(
-                this, [this, clouds]() {
-                    SetClouds(clouds);
+                this, [this, entries]() {
+                    SetEntries(entries);
                     CloseDialog();
                 });
         }
