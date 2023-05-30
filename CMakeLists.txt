@@ -31,6 +31,7 @@ target_sources(calibrator PRIVATE
     src/main.cpp
     src/main_window.cpp
     src/data.cpp
+    src/gui_state.cpp
 )
 
 if(WIN32)

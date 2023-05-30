@@ -1,4 +1,5 @@
 #include <main_window.h>
+#include <gui_state.h>
 
 #include "open3d/visualization/visualizer/GuiSettingsModel.h"
 #include "open3d/visualization/visualizer/GuiSettingsView.h"
@@ -6,6 +7,43 @@
 #include "open3d/visualization/gui/FileDialog.h"
 
 using namespace open3d::visualization;
+
+
+std::shared_ptr<gui::Dialog> CreateContactDialog(gui::Window* window) {
+    auto& theme = window->GetTheme();
+    auto em = theme.font_size;
+    auto dlg = std::make_shared<gui::Dialog>("Contact Us");
+
+    auto title = std::make_shared<gui::Label>("Contact Us");
+    auto left_col = std::make_shared<gui::Label>(
+        "Web site:\n"
+        "Code:\n"
+        "Mailing list:\n"
+        "Discord channel:");
+    auto right_col = std::make_shared<gui::Label>(
+        "http://www.open3d.org\n"
+        "http://github.org/isl-org/Open3D\n"
+        "http://www.open3d.org/index.php/subscribe/\n"
+        "https://discord.gg/D35BGvn");
+    auto ok = std::make_shared<gui::Button>("OK");
+    ok->SetOnClicked([window]() { window->CloseDialog(); });
+
+    gui::Margins margins(em);
+    auto layout = std::make_shared<gui::Vert>(0, margins);
+    layout->AddChild(gui::Horiz::MakeCentered(title));
+    layout->AddFixed(em);
+
+    auto columns = std::make_shared<gui::Horiz>(em, gui::Margins());
+    columns->AddChild(left_col);
+    columns->AddChild(right_col);
+    layout->AddChild(columns);
+
+    layout->AddFixed(em);
+    layout->AddChild(gui::Horiz::MakeCentered(ok));
+    dlg->AddChild(layout);
+
+    return dlg;
+}
 
 std::shared_ptr<gui::Dialog> CreateAboutDialog(gui::Window* window) {
     auto& theme = window->GetTheme();
@@ -55,124 +93,6 @@ std::shared_ptr<gui::Dialog> CreateAboutDialog(gui::Window* window) {
     return dlg;
 }
 
-std::shared_ptr<gui::VGrid> CreateHelpDisplay(gui::Window* window) {
-    auto& theme = window->GetTheme();
-
-    gui::Margins margins(theme.font_size);
-    auto layout = std::make_shared<gui::VGrid>(2, 0, margins);
-    layout->SetBackgroundColor(gui::Color(0, 0, 0, 0.5));
-
-    auto AddLabel = [layout](const char* text) {
-        auto label = std::make_shared<gui::Label>(text);
-        label->SetTextColor(gui::Color(1, 1, 1));
-        layout->AddChild(label);
-    };
-    auto AddRow = [layout, &AddLabel](const char* left, const char* right) {
-        AddLabel(left);
-        AddLabel(right);
-    };
-
-    AddRow("Arcball mode", " ");
-    AddRow("Left-drag", "Rotate camera");
-    AddRow("Shift + left-drag", "Forward/backward");
-    AddLabel("Ctrl + left-drag");
-    AddLabel("Pan camera");
-    AddLabel("Win + left-drag (up/down)  ");
-    AddLabel("Rotate around forward axis");
-
-    // GNOME3 uses Win/Meta as a shortcut to move windows around, so we
-    // need another way to rotate around the forward axis.
-    AddLabel("Ctrl + Shift + left-drag");
-    AddLabel("Rotate around forward axis");
-    AddLabel("Alt + left-drag");
-    AddLabel("Rotate directional light");
-
-    AddRow("Right-drag", "Pan camera");
-    AddRow("Middle-drag", "Rotate directional light");
-    AddRow("Wheel", "Forward/backward");
-    AddRow("Shift + Wheel", "Change field of view");
-    AddRow("", "");
-
-    AddRow("Fly mode", " ");
-    AddRow("Left-drag", "Rotate camera");
-    AddLabel("Win + left-drag");
-    AddLabel("Rotate around forward axis");
-    AddRow("W", "Forward");
-    AddRow("S", "Backward");
-    AddRow("A", "Step left");
-    AddRow("D", "Step right");
-    AddRow("Q", "Step up");
-    AddRow("Z", "Step down");
-    AddRow("E", "Roll left");
-    AddRow("R", "Roll right");
-    AddRow("Up", "Look up");
-    AddRow("Down", "Look down");
-    AddRow("Left", "Look left");
-    AddRow("Right", "Look right");
-
-    return layout;
-}
-
-std::shared_ptr<gui::VGrid> CreateCameraDisplay(gui::Window* window) {
-    auto& theme = window->GetTheme();
-
-    gui::Margins margins(theme.font_size);
-    auto layout = std::make_shared<gui::VGrid>(2, 0, margins);
-    layout->SetBackgroundColor(gui::Color(0, 0, 0, 0.5));
-
-    auto AddLabel = [layout](const char* text) {
-        auto label = std::make_shared<gui::Label>(text);
-        label->SetTextColor(gui::Color(1, 1, 1));
-        layout->AddChild(label);
-    };
-    auto AddRow = [layout, &AddLabel](const char* left, const char* right) {
-        AddLabel(left);
-        AddLabel(right);
-    };
-
-    AddRow("Position:", "[0 0 0]");
-    AddRow("Forward:", "[0 0 0]");
-    AddRow("Left:", "[0 0 0]");
-    AddRow("Up:", "[0 0 0]");
-
-    return layout;
-}
-
-std::shared_ptr<gui::Dialog> CreateContactDialog(gui::Window* window) {
-    auto& theme = window->GetTheme();
-    auto em = theme.font_size;
-    auto dlg = std::make_shared<gui::Dialog>("Contact Us");
-
-    auto title = std::make_shared<gui::Label>("Contact Us");
-    auto left_col = std::make_shared<gui::Label>(
-        "Web site:\n"
-        "Code:\n"
-        "Mailing list:\n"
-        "Discord channel:");
-    auto right_col = std::make_shared<gui::Label>(
-        "http://www.open3d.org\n"
-        "http://github.org/isl-org/Open3D\n"
-        "http://www.open3d.org/index.php/subscribe/\n"
-        "https://discord.gg/D35BGvn");
-    auto ok = std::make_shared<gui::Button>("OK");
-    ok->SetOnClicked([window]() { window->CloseDialog(); });
-
-    gui::Margins margins(em);
-    auto layout = std::make_shared<gui::Vert>(0, margins);
-    layout->AddChild(gui::Horiz::MakeCentered(title));
-    layout->AddFixed(em);
-
-    auto columns = std::make_shared<gui::Horiz>(em, gui::Margins());
-    columns->AddChild(left_col);
-    columns->AddChild(right_col);
-    layout->AddChild(columns);
-
-    layout->AddFixed(em);
-    layout->AddChild(gui::Horiz::MakeCentered(ok));
-    dlg->AddChild(layout);
-
-    return dlg;
-}
 
 bool ColorArrayIsUniform(const std::vector<Eigen::Vector3d>& colors) {
     static const double e = 1.0 / 255.0;
@@ -195,277 +115,16 @@ bool PointCloudHasUniformColor(const open3d::geometry::PointCloud& pcd) {
     return ColorArrayIsUniform(pcd.colors_);
 };
 
-//----
-class DrawTimeLabel : public gui::Label {
-    using Super = Label;
-
-public:
-    DrawTimeLabel(gui::Window* w) : Label("0.0 ms") { window_ = w; }
-
-    gui::Size CalcPreferredSize(const gui::LayoutContext& context,
-        const Constraints& constraints) const override {
-        auto h = Super::CalcPreferredSize(context, constraints).height;
-        return gui::Size(context.theme.font_size * 5, h);
-    }
-
-    DrawResult Draw(const gui::DrawContext& context) override {
-        char text[64];
-        // double ms = window_->GetLastFrameTimeSeconds() * 1000.0;
-        double ms = 0.0;
-        snprintf(text, sizeof(text) - 1, "%.1f ms", ms);
-        SetText(text);
-
-        return Super::Draw(context);
-    }
-
-private:
-    gui::Window* window_;
-};
-
-//}  // namespace
 
 const std::string MODEL_NAME = "__model__";
 const std::string INSPECT_MODEL_NAME = "__inspect_model__";
 const std::string WIREFRAME_NAME = "__wireframe_model__";
 
-enum MenuId {
-    FILE_OPEN,
-    FILE_EXPORT_RGB,
-    FILE_QUIT,
-    SETTINGS_LIGHT_AND_MATERIALS,
-    HELP_KEYS,
-    HELP_CAMERA,
-    HELP_ABOUT,
-    HELP_CONTACT,
-    HELP_DEBUG
-};
-
-struct MainWindow::Impl {
-    MainWindow* visualizer_ = nullptr;
-
-    std::shared_ptr<gui::SceneWidget> scene_wgt_;
-    std::shared_ptr<gui::VGrid> help_keys_;
-    std::shared_ptr<gui::VGrid> help_camera_;
-
-    struct Settings {
-        rendering::MaterialRecord lit_material_;
-        rendering::MaterialRecord unlit_material_;
-        rendering::MaterialRecord normal_depth_material_;
-
-        GuiSettingsModel model_;
-        std::shared_ptr<gui::Vert> wgt_base;
-        std::shared_ptr<gui::Button> wgt_mouse_arcball;
-        std::shared_ptr<gui::Button> wgt_mouse_fly;
-        std::shared_ptr<gui::Button> wgt_mouse_model;
-        std::shared_ptr<gui::Button> wgt_mouse_sun;
-        std::shared_ptr<gui::Button> wgt_mouse_ibl;
-        std::shared_ptr<GuiSettingsView> view_;
-    } settings_;
-
-    std::vector<std::shared_ptr<Entry>> loaded_entries;
-
-    int app_menu_custom_items_index_ = -1;
-    std::shared_ptr<gui::Menu> app_menu_;
-
-    bool sun_follows_camera_ = false;
-    bool basic_mode_enabled_ = false;
-
-    void InitializeMaterials(rendering::Renderer& renderer,
-        const std::string& resource_path) {
-        settings_.lit_material_.shader = "defaultLit";
-        settings_.unlit_material_.shader = "defaultUnlit";
-
-        auto& defaults = settings_.model_.GetCurrentMaterials();
-
-        UpdateMaterials(renderer, defaults);
-    }
-
-    void SetMaterialsToDefault() {
-        settings_.view_->ShowFileMaterialEntry(false);
-        settings_.model_.SetMaterialsToDefault();
-        settings_.view_->EnableEstimateNormals(false);
-        // model's OnChanged callback will get called (if set), which will
-        // update everything.
-    }
-
-    void SetMouseControls(gui::Window& window,
-        gui::SceneWidget::Controls mode) {
-        using Controls = gui::SceneWidget::Controls;
-        scene_wgt_->SetViewControls(mode);
-        window.SetFocusWidget(scene_wgt_.get());
-        settings_.wgt_mouse_arcball->SetOn(mode == Controls::ROTATE_CAMERA);
-        settings_.wgt_mouse_fly->SetOn(mode == Controls::FLY);
-        settings_.wgt_mouse_model->SetOn(mode == Controls::ROTATE_MODEL);
-        settings_.wgt_mouse_sun->SetOn(mode == Controls::ROTATE_SUN);
-        settings_.wgt_mouse_ibl->SetOn(mode == Controls::ROTATE_IBL);
-    }
-
-    void ModifyMaterialForBasicMode(rendering::MaterialRecord& basic_mat) {
-        // Set parameters for 'simple' rendering
-        basic_mat.base_color = { 1.f, 1.f, 1.f, 1.f };
-        basic_mat.base_metallic = 0.f;
-        basic_mat.base_roughness = 0.5f;
-        basic_mat.base_reflectance = 0.8f;
-        basic_mat.base_clearcoat = 0.f;
-        basic_mat.base_anisotropy = 0.f;
-        basic_mat.albedo_img.reset();
-        basic_mat.normal_img.reset();
-        basic_mat.ao_img.reset();
-        basic_mat.metallic_img.reset();
-        basic_mat.roughness_img.reset();
-        basic_mat.reflectance_img.reset();
-        basic_mat.sRGB_color = false;
-        basic_mat.sRGB_vertex_color = false;
-    }
-
-    void SetBasicMode(bool enable) {
-        auto o3dscene = scene_wgt_->GetScene();
-        auto view = o3dscene->GetView();
-        auto low_scene = o3dscene->GetScene();
-
-        // Set lighting environment for inspection
-        if (enable) {
-            // Set lighting environment for inspection
-            o3dscene->SetBackground({ 1.f, 1.f, 1.f, 1.f });
-            low_scene->ShowSkybox(false);
-            view->SetShadowing(false, rendering::View::ShadowType::kPCF);
-            view->SetPostProcessing(false);
-        }
-        else {
-            view->SetPostProcessing(true);
-            view->SetShadowing(true, rendering::View::ShadowType::kPCF);
-        }
-    }
-
-    void UpdateFromModel(rendering::Renderer& renderer, bool material_changed) {
-        auto o3dscene = scene_wgt_->GetScene();
-
-        if (settings_.model_.GetShowSkybox()) {
-            o3dscene->ShowSkybox(true);
-        }
-        else {
-            o3dscene->ShowSkybox(false);
-        }
-
-        o3dscene->ShowAxes(settings_.model_.GetShowAxes());
-        o3dscene->ShowGroundPlane(settings_.model_.GetShowGround(),
-            rendering::Scene::GroundPlane::XZ);
-
-        if (settings_.model_.GetBasicMode() != basic_mode_enabled_) {
-            basic_mode_enabled_ = settings_.model_.GetBasicMode();
-            SetBasicMode(basic_mode_enabled_);
-        }
-
-        UpdateLighting(renderer, settings_.model_.GetLighting());
-
-        // Make sure scene redraws once changes have been applied
-        scene_wgt_->ForceRedraw();
-
-        // Bail early if there were no material property changes
-        if (!material_changed) return;
-
-        // update matieral
-        auto& current_materials = settings_.model_.GetCurrentMaterials();
-        UpdateMaterials(renderer, current_materials);
-        UpdateSceneMaterial();
-
-        scene_wgt_->GetRenderView()->SetMode(rendering::View::Mode::Color);
-
-        // Make sure scene redraws once material changes have been applied
-        scene_wgt_->ForceRedraw();
-    }
-
-private:
-    void UpdateLighting(rendering::Renderer& renderer,
-        const GuiSettingsModel::LightingProfile& lighting) {
-        auto scene = scene_wgt_->GetScene();
-        auto* render_scene = scene->GetScene();
-        if (sun_follows_camera_ != settings_.model_.GetSunFollowsCamera()) {
-            sun_follows_camera_ = settings_.model_.GetSunFollowsCamera();
-            if (sun_follows_camera_) {
-                scene_wgt_->SetOnCameraChanged([this](rendering::Camera* cam) {
-                    auto render_scene = scene_wgt_->GetScene()->GetScene();
-                    render_scene->SetSunLightDirection(cam->GetForwardVector());
-                    });
-                render_scene->SetSunLightDirection(
-                    scene->GetCamera()->GetForwardVector());
-                settings_.wgt_mouse_sun->SetEnabled(false);
-                scene_wgt_->SetSunInteractorEnabled(false);
-            }
-            else {
-                scene_wgt_->SetOnCameraChanged(
-                    std::function<void(rendering::Camera*)>());
-                settings_.wgt_mouse_sun->SetEnabled(true);
-                scene_wgt_->SetSunInteractorEnabled(true);
-            }
-        }
-
-        render_scene->EnableIndirectLight(lighting.ibl_enabled);
-        render_scene->SetIndirectLightIntensity(float(lighting.ibl_intensity));
-        render_scene->SetIndirectLightRotation(lighting.ibl_rotation);
-        render_scene->SetSunLightColor(lighting.sun_color);
-        render_scene->SetSunLightIntensity(float(lighting.sun_intensity));
-        if (!sun_follows_camera_) {
-            render_scene->SetSunLightDirection(lighting.sun_dir);
-        }
-        else {
-            render_scene->SetSunLightDirection(
-                scene->GetCamera()->GetForwardVector());
-        }
-        render_scene->EnableSunLight(lighting.sun_enabled);
-    }
-
-    void UpdateSceneMaterial() {
-        open3d::visualization::rendering::MaterialRecord material;
-        if (settings_.model_.GetMaterialType() == GuiSettingsModel::MaterialType::LIT) {
-            material = settings_.lit_material_;
-        }
-        else {
-            material = settings_.unlit_material_;
-        }
-
-        if (basic_mode_enabled_) {
-            rendering::MaterialRecord basic_mat(material);
-            ModifyMaterialForBasicMode(basic_mat);
-            scene_wgt_->GetScene()->UpdateMaterial(basic_mat);
-        }
-        else {
-            scene_wgt_->GetScene()->UpdateMaterial(material);
-        }
-    }
-
-    void UpdateMaterials(rendering::Renderer& renderer,
-        const GuiSettingsModel::Materials& materials) {
-        auto& lit = settings_.lit_material_;
-        auto& unlit = settings_.unlit_material_;
-        auto& normal_depth = settings_.normal_depth_material_;
-
-        // Update lit from GUI
-        lit.base_color.x() = materials.lit.base_color.x();
-        lit.base_color.y() = materials.lit.base_color.y();
-        lit.base_color.z() = materials.lit.base_color.z();
-        lit.point_size = materials.point_size;
-        lit.base_metallic = materials.lit.metallic;
-        lit.base_roughness = materials.lit.roughness;
-        lit.base_reflectance = materials.lit.reflectance;
-        lit.base_clearcoat = materials.lit.clear_coat;
-        lit.base_clearcoat_roughness = materials.lit.clear_coat_roughness;
-        lit.base_anisotropy = materials.lit.anisotropy;
-
-        // Update unlit from GUI
-        unlit.base_color.x() = materials.unlit.base_color.x();
-        unlit.base_color.y() = materials.unlit.base_color.y();
-        unlit.base_color.z() = materials.unlit.base_color.z();
-        unlit.point_size = materials.point_size;
-
-        // Update normal/depth from GUI
-        normal_depth.point_size = materials.point_size;
-    }
-};
 
 MainWindow::MainWindow(const std::string& title, int width, int height)
-    : gui::Window(title, width, height), impl_(new MainWindow::Impl()) {
-    Init();
+    : gui::Window(title, width, height)
+{
+    gui_state = std::make_unique<GuiState>((MainWindow*)this);
 }
 
 MainWindow::MainWindow(
@@ -476,9 +135,9 @@ MainWindow::MainWindow(
     int height,
     int left,
     int top)
-    : gui::Window(title, left, top, width, height),
-    impl_(new MainWindow::Impl()) {
-    Init();
+    : gui::Window(title, left, top, width, height)
+{
+    gui_state = std::make_unique<GuiState>((MainWindow*)this);
     SetEntries(entries);  // also updates the camera
 
     // Create a message processor for incoming messages.
@@ -488,160 +147,9 @@ MainWindow::MainWindow(
             // Rather than duplicating the logic to figure out the correct material,
             // just add with the default material and pretend the user changed the
             // current material and update everyone's material.
-            impl_->scene_wgt_->GetScene()->AddGeometry(path, geom.get(),
-                rendering::MaterialRecord());
-            impl_->UpdateFromModel(GetRenderer(), true);
+            gui_state->scene_wgt->GetScene()->AddGeometry(path, geom.get(), rendering::MaterialRecord());
+            gui_state->UpdateFromModel(GetRenderer(), true);
     };
-}
-
-void MainWindow::Init() {
-    auto& app = gui::Application::GetInstance();
-    auto& theme = GetTheme();
-
-    // Create menu
-    if (!gui::Application::GetInstance().GetMenubar()) {
-        auto menu = std::make_shared<gui::Menu>();
-        auto file_menu = std::make_shared<gui::Menu>();
-        file_menu->AddItem("Open...", FILE_OPEN, gui::KEY_O);
-        file_menu->AddItem("Export Current Image...", FILE_EXPORT_RGB);
-        file_menu->AddSeparator();
-#if defined(WIN32)
-        file_menu->AddItem("Exit", FILE_QUIT);
-#endif
-        menu->AddMenu("File", file_menu);
-
-        auto settings_menu = std::make_shared<gui::Menu>();
-        settings_menu->AddItem("Lighting & Materials",
-            SETTINGS_LIGHT_AND_MATERIALS);
-        settings_menu->SetChecked(SETTINGS_LIGHT_AND_MATERIALS, true);
-        menu->AddMenu("Settings", settings_menu);
-
-        auto help_menu = std::make_shared<gui::Menu>();
-        help_menu->AddItem("Show Controls", HELP_KEYS);
-        help_menu->AddItem("Show Camera Info", HELP_CAMERA);
-        help_menu->AddSeparator();
-        help_menu->AddItem("About", HELP_ABOUT);
-        help_menu->AddItem("Contact", HELP_CONTACT);
-        menu->AddMenu("Help", help_menu);
-
-        gui::Application::GetInstance().SetMenubar(menu);
-    }
-
-    // Implementation needs the MainWindow
-    impl_->visualizer_ = this;
-
-    // Create scene
-    impl_->scene_wgt_ = std::make_shared<gui::SceneWidget>();
-    impl_->scene_wgt_->SetScene(
-        std::make_shared<rendering::Open3DScene>(GetRenderer()));
-    impl_->scene_wgt_->SetOnSunDirectionChanged(
-        [this](const Eigen::Vector3f& new_dir) {
-            auto lighting = impl_->settings_.model_.GetLighting();  // copy
-            lighting.sun_dir = new_dir.normalized();
-            impl_->settings_.model_.SetCustomLighting(lighting);
-        });
-    impl_->scene_wgt_->EnableSceneCaching(true);
-
-    // Create light
-    auto& settings = impl_->settings_;
-    std::string resource_path = app.GetResourcePath();
-    auto ibl_path = resource_path + "/default";
-    auto* render_scene = impl_->scene_wgt_->GetScene()->GetScene();
-    render_scene->SetIndirectLight(ibl_path);
-
-    // Create materials
-    impl_->InitializeMaterials(GetRenderer(), resource_path);
-
-    // Setup UI
-    const auto em = theme.font_size;
-    const int lm = int(std::ceil(0.5 * em));
-    const int grid_spacing = int(std::ceil(0.25 * em));
-
-    AddChild(impl_->scene_wgt_);
-
-    // Add settings widget
-    const int separation_height = int(std::ceil(0.75 * em));
-    // (we don't want as much left margin because the twisty arrow is the
-    // only thing there, and visually it looks larger than the right.)
-    const gui::Margins base_margins(int(std::round(0.5 * lm)), lm, lm, lm);
-    settings.wgt_base = std::make_shared<gui::Vert>(0, base_margins);
-
-    gui::Margins indent(em, 0, 0, 0);
-    auto view_ctrls =
-        std::make_shared<gui::CollapsableVert>("Mouse controls", 0, indent);
-
-    // ... view manipulator buttons
-    settings.wgt_mouse_arcball = std::make_shared<SmallToggleButton>("Arcball");
-    impl_->settings_.wgt_mouse_arcball->SetOn(true);
-    settings.wgt_mouse_arcball->SetOnClicked([this]() {
-        impl_->SetMouseControls(*this,
-            gui::SceneWidget::Controls::ROTATE_CAMERA);
-        });
-    settings.wgt_mouse_fly = std::make_shared<SmallToggleButton>("Fly");
-    settings.wgt_mouse_fly->SetOnClicked([this]() {
-        impl_->SetMouseControls(*this, gui::SceneWidget::Controls::FLY);
-        });
-    settings.wgt_mouse_model = std::make_shared<SmallToggleButton>("Model");
-    settings.wgt_mouse_model->SetOnClicked([this]() {
-        impl_->SetMouseControls(*this,
-            gui::SceneWidget::Controls::ROTATE_MODEL);
-        });
-    settings.wgt_mouse_sun = std::make_shared<SmallToggleButton>("Sun");
-    settings.wgt_mouse_sun->SetOnClicked([this]() {
-        impl_->SetMouseControls(*this, gui::SceneWidget::Controls::ROTATE_SUN);
-        });
-    settings.wgt_mouse_ibl = std::make_shared<SmallToggleButton>("Environment");
-    settings.wgt_mouse_ibl->SetOnClicked([this]() {
-        impl_->SetMouseControls(*this, gui::SceneWidget::Controls::ROTATE_IBL);
-        });
-
-    auto reset_camera = std::make_shared<SmallButton>("Reset camera");
-    reset_camera->SetOnClicked([this]() {
-        impl_->scene_wgt_->GoToCameraPreset(
-            gui::SceneWidget::CameraPreset::PLUS_Z);
-        });
-
-    auto camera_controls1 = std::make_shared<gui::Horiz>(grid_spacing);
-    camera_controls1->AddStretch();
-    camera_controls1->AddChild(settings.wgt_mouse_arcball);
-    camera_controls1->AddChild(settings.wgt_mouse_fly);
-    camera_controls1->AddChild(settings.wgt_mouse_model);
-    camera_controls1->AddStretch();
-    auto camera_controls2 = std::make_shared<gui::Horiz>(grid_spacing);
-    camera_controls2->AddStretch();
-    camera_controls2->AddChild(settings.wgt_mouse_sun);
-    camera_controls2->AddChild(settings.wgt_mouse_ibl);
-    camera_controls2->AddStretch();
-    view_ctrls->AddChild(camera_controls1);
-    view_ctrls->AddFixed(int(std::ceil(0.25 * em)));
-    view_ctrls->AddChild(camera_controls2);
-    view_ctrls->AddFixed(separation_height);
-    view_ctrls->AddChild(gui::Horiz::MakeCentered(reset_camera));
-    settings.wgt_base->AddChild(view_ctrls);
-
-    // ... lighting and materials
-    settings.view_ = std::make_shared<GuiSettingsView>(
-        settings.model_, theme, resource_path, [this](const char* name) {
-            // Do not use custom light maps
-        });
-    settings.model_.SetOnChanged([this](bool material_type_changed) {
-        impl_->settings_.view_->Update();
-        impl_->UpdateFromModel(GetRenderer(), material_type_changed);
-        });
-    settings.wgt_base->AddChild(settings.view_);
-
-    AddChild(settings.wgt_base);
-
-    // Apply model settings (which should be defaults) to the rendering entities
-    impl_->UpdateFromModel(GetRenderer(), false);
-
-    // Other items
-    impl_->help_keys_ = CreateHelpDisplay(this);
-    impl_->help_keys_->SetVisible(false);
-    AddChild(impl_->help_keys_);
-    impl_->help_camera_ = CreateCameraDisplay(this);
-    impl_->help_camera_->SetVisible(false);
-    AddChild(impl_->help_camera_);
 }
 
 MainWindow::~MainWindow() {}
@@ -652,10 +160,10 @@ void MainWindow::SetTitle(const std::string& title) {
 
 
 void MainWindow::SetEntries(const std::vector<std::shared_ptr<Entry>>& point_clouds) {
-    auto scene3d = impl_->scene_wgt_->GetScene();
+    auto scene3d = gui_state->scene_wgt->GetScene();
     scene3d->ClearGeometry();
 
-    impl_->SetMaterialsToDefault();
+    gui_state->SetMaterialsToDefault();
 
     rendering::MaterialRecord loaded_material;
 
@@ -665,7 +173,7 @@ void MainWindow::SetEntries(const std::vector<std::shared_ptr<Entry>>& point_clo
         // is, lit. But if the cloud/mesh has differing vertex colors, then
         // we assume that the vertex colors have the lighting value baked in
         // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-        auto& entry = impl_->loaded_entries.at(i);
+        auto& entry = gui_state->loaded_entries.at(i);
         const open3d::geometry::PointCloud& cloud = entry->get_transformed();
         if (cloud.HasColors() && !PointCloudHasUniformColor(cloud)) {
             loaded_material.shader = "defaultUnlit";
@@ -676,70 +184,70 @@ void MainWindow::SetEntries(const std::vector<std::shared_ptr<Entry>>& point_clo
         scene3d->AddGeometry(entry->path, &cloud, loaded_material);
     }
 
-    impl_->settings_.model_.SetDisplayingPointClouds(true);
-    if (!impl_->settings_.model_.GetUserHasChangedLightingProfile()) {
+    gui_state->settings.model.SetDisplayingPointClouds(true);
+    if (!gui_state->settings.model.GetUserHasChangedLightingProfile()) {
         auto& profile =
             GuiSettingsModel::GetDefaultPointCloudLightingProfile();
-        impl_->settings_.model_.SetLightingProfile(profile);
+        gui_state->settings.model.SetLightingProfile(profile);
     }
 
-    auto type = impl_->settings_.model_.GetMaterialType();
+    auto type = gui_state->settings.model.GetMaterialType();
     if (type == GuiSettingsModel::MaterialType::LIT ||
         type == GuiSettingsModel::MaterialType::UNLIT) {
         if (loaded_material.shader == "defaultUnlit") {
-            impl_->settings_.model_.SetMaterialType(
+            gui_state->settings.model.SetMaterialType(
                 GuiSettingsModel::MaterialType::UNLIT);
         }
         else {
-            impl_->settings_.model_.SetMaterialType(
+            gui_state->settings.model.SetMaterialType(
                 GuiSettingsModel::MaterialType::LIT);
         }
     }
 
     // Setup UI for loaded model/point cloud
-    impl_->settings_.model_.UnsetCustomDefaultColor();
-    impl_->settings_.view_->ShowFileMaterialEntry(false);
-    impl_->settings_.view_->Update();  // make sure prefab material is correct
+    gui_state->settings.model.UnsetCustomDefaultColor();
+    gui_state->settings.view->ShowFileMaterialEntry(false);
+    gui_state->settings.view->Update();  // make sure prefab material is correct
 
     auto& bounds = scene3d->GetBoundingBox();
-    impl_->scene_wgt_->SetupCamera(60.0, bounds,
+    gui_state->scene_wgt->SetupCamera(60.0, bounds,
         bounds.GetCenter().cast<float>());
 
     // Setup for raw mode if enabled...
-    if (impl_->basic_mode_enabled_) {
+    if (gui_state->basic_mode_enabled_) {
         scene3d->GetScene()->SetSunLightDirection(scene3d->GetCamera()->GetForwardVector());
     }
 
     // Make sure scene is redrawn
-    impl_->scene_wgt_->ForceRedraw();
+    gui_state->scene_wgt->ForceRedraw();
 }
 
 void MainWindow::Layout(const gui::LayoutContext& context) {
     auto r = GetContentRect();
     const auto em = context.theme.font_size;
-    impl_->scene_wgt_->SetFrame(r);
+    gui_state->scene_wgt->SetFrame(r);
 
     // Draw help keys HUD in upper left
-    const auto pref = impl_->help_keys_->CalcPreferredSize(
+    const auto pref = gui_state->help_keys->CalcPreferredSize(
         context, gui::Widget::Constraints());
-    impl_->help_keys_->SetFrame(gui::Rect(0, r.y, pref.width, pref.height));
-    impl_->help_keys_->Layout(context);
+    gui_state->help_keys->SetFrame(gui::Rect(0, r.y, pref.width, pref.height));
+    gui_state->help_keys->Layout(context);
 
     // Draw camera HUD in lower left
-    const auto prefcam = impl_->help_camera_->CalcPreferredSize(
+    const auto prefcam = gui_state->help_camera->CalcPreferredSize(
         context, gui::Widget::Constraints());
-    impl_->help_camera_->SetFrame(gui::Rect(0, r.height + r.y - prefcam.height,
+    gui_state->help_camera->SetFrame(gui::Rect(0, r.height + r.y - prefcam.height,
         prefcam.width, prefcam.height));
-    impl_->help_camera_->Layout(context);
+    gui_state->help_camera->Layout(context);
 
     // Settings in upper right
     const auto LIGHT_SETTINGS_WIDTH = 18 * em;
-    auto light_settings_size = impl_->settings_.wgt_base->CalcPreferredSize(
+    auto light_settings_size = gui_state->settings.wgt_base->CalcPreferredSize(
         context, gui::Widget::Constraints());
     gui::Rect lightSettingsRect(r.width - LIGHT_SETTINGS_WIDTH, r.y,
         LIGHT_SETTINGS_WIDTH,
         /*std::min(r.height, light_settings_size.height)*/ r.height < light_settings_size.height ? r.height : light_settings_size.height);
-    impl_->settings_.wgt_base->SetFrame(lightSettingsRect);
+    gui_state->settings.wgt_base->SetFrame(lightSettingsRect);
 
     Super::Layout(context);
 }
@@ -771,14 +279,14 @@ void MainWindow::LoadCloud(const std::string& path) {
 
         try {
             entry = std::make_shared<Entry>(path, UpdateProgress);
-            this->impl_->loaded_entries.push_back(entry);
+            gui_state->loaded_entries.push_back(entry);
         }
         catch (...) {
             entry.reset();
         }
 
         if (entry) {
-            const auto& entries = impl_->loaded_entries;
+            const auto& entries = gui_state->loaded_entries;
             gui::Application::GetInstance().PostToMainThread(
                 this, [this, entries]() {
                     SetEntries(entries);
@@ -797,8 +305,8 @@ void MainWindow::LoadCloud(const std::string& path) {
 }
 
 void MainWindow::ExportCurrentImage(const std::string& path) {
-    impl_->scene_wgt_->EnableSceneCaching(false);
-    impl_->scene_wgt_->GetScene()->GetScene()->RenderToImage(
+    gui_state->scene_wgt->EnableSceneCaching(false);
+    gui_state->scene_wgt->GetScene()->GetScene()->RenderToImage(
         [this, path](std::shared_ptr<open3d::geometry::Image> image) mutable {
             if (!open3d::io::WriteImage(path, *image)) {
                 this->ShowMessageBox(
@@ -806,7 +314,7 @@ void MainWindow::ExportCurrentImage(const std::string& path) {
                         path + ".")
                     .c_str());
             }
-            impl_->scene_wgt_->EnableSceneCaching(true);
+            gui_state->scene_wgt->EnableSceneCaching(true);
         });
 }
 
@@ -861,8 +369,8 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         gui::Application::GetInstance().Quit();
         break;
     case SETTINGS_LIGHT_AND_MATERIALS: {
-        auto visibility = !impl_->settings_.wgt_base->IsVisible();
-        impl_->settings_.wgt_base->SetVisible(visibility);
+        auto visibility = !gui_state->settings.wgt_base->IsVisible();
+        gui_state->settings.wgt_base->SetVisible(visibility);
         auto menubar = gui::Application::GetInstance().GetMenubar();
         menubar->SetChecked(SETTINGS_LIGHT_AND_MATERIALS, visibility);
 
@@ -873,21 +381,21 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         break;
     }
     case HELP_KEYS: {
-        bool is_visible = !impl_->help_keys_->IsVisible();
-        impl_->help_keys_->SetVisible(is_visible);
+        bool is_visible = !gui_state->help_keys->IsVisible();
+        gui_state->help_keys->SetVisible(is_visible);
         auto menubar = gui::Application::GetInstance().GetMenubar();
         menubar->SetChecked(HELP_KEYS, is_visible);
         break;
     }
     case HELP_CAMERA: {
-        bool is_visible = !impl_->help_camera_->IsVisible();
-        impl_->help_camera_->SetVisible(is_visible);
+        bool is_visible = !gui_state->help_camera->IsVisible();
+        gui_state->help_camera->SetVisible(is_visible);
         auto menubar = gui::Application::GetInstance().GetMenubar();
         menubar->SetChecked(HELP_CAMERA, is_visible);
         if (is_visible) {
-            impl_->scene_wgt_->SetOnCameraChanged([this](rendering::Camera
+            gui_state->scene_wgt->SetOnCameraChanged([this](rendering::Camera
                 * cam) {
-                    auto children = this->impl_->help_camera_->GetChildren();
+                    auto children = this->gui_state->help_camera->GetChildren();
                     auto set_text = [](const Eigen::Vector3f& v,
                         std::shared_ptr<gui::Widget> label) {
                             auto l = std::dynamic_pointer_cast<gui::Label>(label);
@@ -904,7 +412,7 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
                 });
         }
         else {
-            impl_->scene_wgt_->SetOnCameraChanged(
+            gui_state->scene_wgt->SetOnCameraChanged(
                 std::function<void(rendering::Camera*)>());
         }
         break;

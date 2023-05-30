@@ -1,11 +1,12 @@
 #pragma once
 
 #include <open3d/Open3D.h>
-
 #include <vector>
 
 #include <data.h>
 
+
+struct GuiState;
 
 class MainWindow : public open3d::visualization::gui::Window {
     using Super = open3d::visualization::gui::Window;
@@ -36,8 +37,5 @@ protected:
     void OnDragDropped(const char* path) override;
 
 private:
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-
-    void Init();
+    std::unique_ptr<GuiState> gui_state;
 };
