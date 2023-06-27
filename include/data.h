@@ -38,7 +38,7 @@ public:
     /// <summary>
     /// Contructor that creates an Entry with zero points.
     /// </summary>
-    inline Entry(const std::string& path_) : path(path_), name(), transformations(), base({}), transformed({}) {}
+    inline Entry(const std::string& path_) : path(path_), name(), transformations(), base(), transformed() {}
 
     /// <summary>
     /// Copy Contructor
