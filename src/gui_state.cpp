@@ -116,13 +116,14 @@ void GuiState::init_scene() {
     scene_wgt = std::make_shared<gui::SceneWidget>();
     scene_wgt->SetScene(
         std::make_shared<rendering::Open3DScene>(window_ptr->GetRenderer()));
-    scene_wgt->SetOnSunDirectionChanged(
-        [this](const Eigen::Vector3f& new_dir) {
-            auto lighting = settings.model.GetLighting();  // copy
-            lighting.sun_dir = new_dir.normalized();
-            settings.model.SetCustomLighting(lighting);
-        });
     scene_wgt->EnableSceneCaching(true);
+    scene_wgt->SetSunInteractorEnabled(false);
+    scene_wgt->SetOnCameraChanged([this](rendering::Camera* cam) {
+        auto render_scene = scene_wgt->GetScene()->GetScene();
+        render_scene->SetSunLightDirection(cam->GetForwardVector());
+        });
+    auto* render_scene = scene_wgt->GetScene()->GetScene();
+    render_scene->SetSunLightDirection(scene_wgt->GetScene()->GetCamera()->GetForwardVector());
 }
 
 void GuiState::init_point_info() {
@@ -231,98 +232,11 @@ void GuiState::init_point_info() {
         });
 }
 
-void GuiState::init_settings() {
-    auto& app = gui::Application::GetInstance();
-    auto& theme = window_ptr->GetTheme();
-
-    // Create light
-    std::string resource_path = app.GetResourcePath();
-    auto ibl_path = resource_path + "/default";
-    auto* render_scene = scene_wgt->GetScene()->GetScene();
-    render_scene->SetIndirectLight(ibl_path);
-
-    // Create materials
-    InitializeMaterials(window_ptr->GetRenderer(), resource_path);
-
-    // Setup UI
-    const auto em = theme.font_size;
-    const int lm = int(std::ceil(0.5 * em));
-    const int grid_spacing = int(std::ceil(0.25 * em));
-
-    // Add settings widget
-    const int separation_height = int(std::ceil(0.75 * em));
-    // (we don't want as much left margin because the twisty arrow is the
-    // only thing there, and visually it looks larger than the right.)
-    const gui::Margins base_margins(int(std::round(0.5 * lm)), lm, lm, lm);
-    settings.wgt_base = std::make_shared<gui::Vert>(0, base_margins);
-
-    gui::Margins indent(em, 0, 0, 0);
-    auto view_ctrls =
-        std::make_shared<gui::CollapsableVert>("Mouse controls", 0, indent);
-
-    // ... view manipulator buttons
-    settings.wgt_mouse_arcball = std::make_shared<SmallToggleButton>("Arcball");
-    settings.wgt_mouse_arcball->SetOn(true);
-    settings.wgt_mouse_arcball->SetOnClicked([this]() {
-        SetMouseControls(window_ptr,
-            gui::SceneWidget::Controls::ROTATE_CAMERA);
-        });
-    settings.wgt_mouse_fly = std::make_shared<SmallToggleButton>("Fly");
-    settings.wgt_mouse_fly->SetOnClicked([this]() {
-        SetMouseControls(window_ptr, gui::SceneWidget::Controls::FLY);
-        });
-    settings.wgt_mouse_model = std::make_shared<SmallToggleButton>("Model");
-    settings.wgt_mouse_model->SetOnClicked([this]() {
-        SetMouseControls(window_ptr,
-            gui::SceneWidget::Controls::ROTATE_MODEL);
-        });
-    settings.wgt_mouse_sun = std::make_shared<SmallToggleButton>("Sun");
-    settings.wgt_mouse_sun->SetOnClicked([this]() {
-        SetMouseControls(window_ptr, gui::SceneWidget::Controls::ROTATE_SUN);
-        });
-    settings.wgt_mouse_ibl = std::make_shared<SmallToggleButton>("Environment");
-    settings.wgt_mouse_ibl->SetOnClicked([this]() {
-        SetMouseControls(window_ptr, gui::SceneWidget::Controls::ROTATE_IBL);
-        });
-
-    auto reset_camera = std::make_shared<SmallButton>("Reset camera");
-    reset_camera->SetOnClicked([this]() {
-        scene_wgt->GoToCameraPreset(
-            gui::SceneWidget::CameraPreset::PLUS_Z);
-        });
-
-    auto camera_controls1 = std::make_shared<gui::Horiz>(grid_spacing);
-    camera_controls1->AddStretch();
-    camera_controls1->AddChild(settings.wgt_mouse_arcball);
-    camera_controls1->AddChild(settings.wgt_mouse_fly);
-    camera_controls1->AddChild(settings.wgt_mouse_model);
-    camera_controls1->AddStretch();
-    auto camera_controls2 = std::make_shared<gui::Horiz>(grid_spacing);
-    camera_controls2->AddStretch();
-    camera_controls2->AddChild(settings.wgt_mouse_sun);
-    camera_controls2->AddChild(settings.wgt_mouse_ibl);
-    camera_controls2->AddStretch();
-    view_ctrls->AddChild(camera_controls1);
-    view_ctrls->AddFixed(int(std::ceil(0.25 * em)));
-    view_ctrls->AddChild(camera_controls2);
-    view_ctrls->AddFixed(separation_height);
-    view_ctrls->AddChild(gui::Horiz::MakeCentered(reset_camera));
-    settings.wgt_base->AddChild(view_ctrls);
-
-    // ... lighting and materials
-    settings.view = std::make_shared<GuiSettingsView>(
-        settings.model, theme, resource_path, [this](const char* name) {
-            // Do not use custom light maps
-        });
-    settings.model.SetOnChanged([this](bool material_type_changed) {
-        settings.view->Update();
-        this->UpdateFromModel(window_ptr->GetRenderer(), material_type_changed);
-        });
-    settings.wgt_base->AddChild(settings.view);
-}
-
-
 GuiState::GuiState(MainWindow* window) : window_ptr(window) {
+    loaded_entries = {};
+    current_entry = std::make_shared<Entry>("empty");
+    entry_index = -1;
+
     if (!gui::Application::GetInstance().GetMenubar()) {
         init_menu();
         gui::Application::GetInstance().SetMenubar(app_menu);
@@ -330,14 +244,21 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
     init_scene();
     window_ptr->AddChild(scene_wgt);
 
-    init_settings();
-    window_ptr->AddChild(settings.wgt_base);
-    
+    init_materials();
+
     init_point_info();
     window_ptr->AddChild(point_info);
 
     // Apply model settings (which should be defaults) to the rendering entities
-    UpdateFromModel(window_ptr->GetRenderer(), false);
+    auto scene = scene_wgt->GetScene();
+    scene->ShowSkybox(false);
+    scene->ShowAxes(true);
+    scene->ShowGroundPlane(false, rendering::Scene::GroundPlane::XZ);
+    scene_wgt->GetRenderView()->SetMode(rendering::View::Mode::Color);
+    auto& lighting = model.GetLighting();
+    init_lighting(lighting);
+    // Make sure scene redraws once changes have been applied
+    scene_wgt->ForceRedraw();
 
     // Other items
     help_keys = CreateHelpDisplay(window_ptr);
@@ -346,6 +267,49 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
     help_camera = CreateCameraDisplay(window_ptr);
     help_camera->SetVisible(false);
     window_ptr->AddChild(help_camera);
+}
+
+void GuiState::init_materials() {
+    highlight_material.shader = "defaultLit";
+    standard_material.shader = "defaultUnlit";
+
+    auto& materials = model.GetCurrentMaterials();
+
+    highlight_material.base_color.x() = materials.lit.base_color.x();
+    highlight_material.base_color.y() = materials.lit.base_color.y();
+    highlight_material.base_color.z() = materials.lit.base_color.z();
+    highlight_material.point_size = materials.point_size;
+    highlight_material.base_metallic = materials.lit.metallic;
+    highlight_material.base_roughness = materials.lit.roughness;
+    highlight_material.base_reflectance = materials.lit.reflectance;
+    highlight_material.base_clearcoat = materials.lit.clear_coat;
+    highlight_material.base_clearcoat_roughness = materials.lit.clear_coat_roughness;
+    highlight_material.base_anisotropy = materials.lit.anisotropy;
+
+    standard_material.base_color.x() = materials.unlit.base_color.x();
+    standard_material.base_color.y() = materials.unlit.base_color.y();
+    standard_material.base_color.z() = materials.unlit.base_color.z();
+    standard_material.point_size = materials.point_size;
+
+}
+
+void GuiState::init_lighting(const GuiSettingsModel::LightingProfile& lighting) {
+    auto scene = scene_wgt->GetScene();
+    auto* render_scene = scene->GetScene();
+
+    scene_wgt->SetOnCameraChanged([this](rendering::Camera* cam) {
+        auto render_scene = scene_wgt->GetScene()->GetScene();
+        render_scene->SetSunLightDirection(cam->GetForwardVector());
+        });
+
+    render_scene->SetSunLightDirection(scene->GetCamera()->GetForwardVector());
+    render_scene->EnableIndirectLight(lighting.ibl_enabled);
+    render_scene->SetIndirectLightIntensity(float(lighting.ibl_intensity));
+    render_scene->SetIndirectLightRotation(lighting.ibl_rotation);
+    render_scene->SetSunLightColor(lighting.sun_color);
+    render_scene->SetSunLightIntensity(float(lighting.sun_intensity));
+    render_scene->SetSunLightDirection(lighting.sun_dir);
+    render_scene->EnableSunLight(lighting.sun_enabled);
 }
 
 
