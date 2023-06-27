@@ -7,6 +7,9 @@
 #include "open3d/visualization/visualizer/GuiWidgets.h"
 #include "open3d/visualization/gui/FileDialog.h"
 
+#include "utils.h"
+#include "pointinfo_widget.h"
+
 class MainWindow;
 
 using namespace open3d::visualization;
@@ -30,7 +33,9 @@ struct GuiState {
     std::shared_ptr<Entry> current_entry;
     int entry_index;
 
+    std::shared_ptr<PointInfo> point_info;
     std::shared_ptr<gui::SceneWidget> scene_wgt;
+
     std::shared_ptr<gui::VGrid> help_keys;
     std::shared_ptr<gui::VGrid> help_camera;
 
@@ -62,6 +67,7 @@ public:
     void init_menu();
     void init_scene();
     void init_settings();
+    void init_point_info();
 
     GuiState(MainWindow* window);
 

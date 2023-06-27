@@ -125,6 +125,112 @@ void GuiState::init_scene() {
     scene_wgt->EnableSceneCaching(true);
 }
 
+void GuiState::init_point_info() {
+    auto& app = gui::Application::GetInstance();
+    auto& theme = window_ptr->GetTheme();
+
+    const float em = (float)theme.font_size;
+    const int lm = int(std::ceil(0.5 * em));
+    const int grid_spacing = int(std::ceil(0.25 * em));
+    const gui::Margins base_margins(int(std::round(0.5 * lm)), lm, lm, lm);
+
+    this->point_info = std::make_shared<PointInfo>(0, base_margins);
+
+    this->point_info->SetEventHandler([this](PointInfoEvent& event_) {
+        bool only_update_selected = false;
+
+        switch (event_.type) {
+        case INDEX_CHANGED: {
+            int index = event_.entry_index;
+            this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(index));
+            this->entry_index = index;
+            break;
+        }
+        case REMOVE_CLICKED: {
+            int index = this->entry_index;
+
+            const char* path = this->loaded_entries.at(index)->path.c_str();
+            this->point_info->entries->RemoveItem(path);
+            this->loaded_entries.erase(this->loaded_entries.begin() + index);
+
+            index -= 1;
+            if (index < 0 && this->loaded_entries.size() > 0) {
+                index = 0;
+            }
+
+            if (index >= 0) {
+                const Entry& e = *this->loaded_entries.at(index);
+                this->current_entry = std::make_shared<Entry>(e);
+                this->entry_index = index;
+
+                this->point_info->entries->SetSelectedIndex(index);
+            }
+            else {
+                this->loaded_entries = {};
+                this->current_entry = std::make_shared<Entry>("empty");
+                this->entry_index = -1;
+            }
+
+            this->point_info->ResetSliders();
+            break;
+        }
+        case ICP_CLICKED: {
+            break;
+        }
+        case MERGE_CLICKED: {
+            break;
+        }
+        case READ_MATRIX_CLICKED: {
+            break;
+        }
+        case SHOW_MATRIX_CLICKED: {
+            auto matrix = current_entry->get_transformation();
+
+            std::stringstream stream;
+            stream << matrix;
+
+            auto text_box = std::make_shared<gui::Label>();
+            text_box->SetText(stream.str().c_str());
+
+            auto ok = std::make_shared<gui::Button>("OK");
+            ok->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
+
+            auto layout = std::make_shared<gui::Vert>(0, gui::Margins(this->window_ptr->GetTheme().font_size));
+            layout->AddChild(gui::Horiz::MakeCentered(text_box));
+            layout->AddFixed(this->window_ptr->GetTheme().font_size);
+            layout->AddChild(gui::Horiz::MakeCentered(ok));
+
+            auto dialog = std::make_shared<gui::Dialog>("Matrix");
+            dialog->AddChild(layout);
+
+            this->window_ptr->ShowDialog(dialog);
+
+            break;
+        }
+        case SLIDER_VALUE_CHANGED: {
+            Eigen::Matrix4d t = make_matrix(event_.x_rotation, event_.y_rotation, event_.z_rotation, event_.x_translation, event_.y_translation, event_.z_translation);
+            this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
+            this->current_entry->do_transform(t);
+            only_update_selected = true;
+            break;
+        }
+        case SLIDER_MOUSE_RELEASE: {
+            if (this->loaded_entries.size() == 0) {
+                break;
+            }
+            Eigen::Matrix4d t = make_matrix(event_.x_rotation, event_.y_rotation, event_.z_rotation, event_.x_translation, event_.y_translation, event_.z_translation);
+            this->loaded_entries.at(entry_index)->do_transform(t);
+            this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
+            this->point_info->ResetSliders();
+            only_update_selected = true;
+            break;
+        }
+        }
+
+        this->set_scene(only_update_selected, true);
+        });
+}
+
 void GuiState::init_settings() {
     auto& app = gui::Application::GetInstance();
     auto& theme = window_ptr->GetTheme();
@@ -226,6 +332,9 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
 
     init_settings();
     window_ptr->AddChild(settings.wgt_base);
+    
+    init_point_info();
+    window_ptr->AddChild(point_info);
 
     // Apply model settings (which should be defaults) to the rendering entities
     UpdateFromModel(window_ptr->GetRenderer(), false);

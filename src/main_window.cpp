@@ -227,10 +227,10 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
     const auto em = context.theme.font_size;
     gui_state->scene_wgt->SetFrame(r);
 
-    // Draw help keys HUD in upper left
+    // Draw help keys HUD in upper right (TODO: overlaps with settings)
     const auto pref = gui_state->help_keys->CalcPreferredSize(
         context, gui::Widget::Constraints());
-    gui_state->help_keys->SetFrame(gui::Rect(0, r.y, pref.width, pref.height));
+    gui_state->help_keys->SetFrame(gui::Rect(r.width - pref.width, r.y, pref.width, pref.height));
     gui_state->help_keys->Layout(context);
 
     // Draw camera HUD in lower left
@@ -246,8 +246,16 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
         context, gui::Widget::Constraints());
     gui::Rect lightSettingsRect(r.width - LIGHT_SETTINGS_WIDTH, r.y,
         LIGHT_SETTINGS_WIDTH,
-        /*std::min(r.height, light_settings_size.height)*/ r.height < light_settings_size.height ? r.height : light_settings_size.height);
+        r.height < light_settings_size.height ? r.height : light_settings_size.height);
     gui_state->settings.wgt_base->SetFrame(lightSettingsRect);
+
+    // Draw point info in the upper left
+    static int MIN_WIDTH = 0;
+    const auto prefpi = gui_state->point_info->CalcPreferredSize(
+        context, gui::Widget::Constraints());
+    MIN_WIDTH = MIN_WIDTH == 0 ? prefpi.width : MIN_WIDTH;
+    gui_state->point_info->SetFrame(gui::Rect(0, r.y, MIN_WIDTH, prefpi.height));
+    gui_state->point_info->Layout(context);
 
     Super::Layout(context);
 }
