@@ -247,7 +247,7 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
         scene3d->ShowAxes(true);
         scene3d->RemoveGeometry(current_entry->path);
         const open3d::geometry::PointCloud& cloud = current_entry->get_transformed();
-        scene3d->AddGeometry(current_entry->path, &cloud, settings.unlit_material);
+        scene3d->AddGeometry(current_entry->path, &cloud, highlight_material);
     }
     else {
         scene3d->ClearGeometry();
@@ -264,10 +264,10 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
             const open3d::geometry::PointCloud& cloud = entry->get_transformed();
 
             if (i != entry_index) {
-                scene3d->AddGeometry(entry->path, &cloud, settings.lit_material);
+                scene3d->AddGeometry(entry->path, &cloud, standard_material);
             }
             else {
-                scene3d->AddGeometry(entry->path, &cloud, settings.unlit_material);
+                scene3d->AddGeometry(entry->path, &cloud, highlight_material);
             }
         }
 

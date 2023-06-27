@@ -40,9 +40,10 @@ struct GuiState {
     bool sun_follows_camera_ = false;
     bool basic_mode_enabled_ = false;
 
+    rendering::MaterialRecord standard_material;
+    rendering::MaterialRecord highlight_material;
+
     struct Settings {
-        rendering::MaterialRecord lit_material;
-        rendering::MaterialRecord unlit_material;
         rendering::MaterialRecord normal_depth_material;
 
         GuiSettingsModel model;
@@ -66,8 +67,8 @@ public:
 
     void InitializeMaterials(rendering::Renderer& renderer,
         const std::string& resource_path) {
-        settings.lit_material.shader = "defaultLit";
-        settings.unlit_material.shader = "defaultUnlit";
+        highlight_material.shader = "defaultLit";
+        standard_material.shader = "defaultUnlit";
 
         auto& defaults = settings.model.GetCurrentMaterials();
 
@@ -211,10 +212,10 @@ public:
     void UpdateSceneMaterial() {
         open3d::visualization::rendering::MaterialRecord material;
         if (settings.model.GetMaterialType() == GuiSettingsModel::MaterialType::LIT) {
-            material = settings.lit_material;
+            material = highlight_material;
         }
         else {
-            material = settings.unlit_material;
+            material = standard_material;
         }
 
         if (basic_mode_enabled_) {
@@ -229,8 +230,8 @@ public:
 
     void UpdateMaterials(rendering::Renderer& renderer,
         const GuiSettingsModel::Materials& materials) {
-        auto& lit = settings.lit_material;
-        auto& unlit = settings.unlit_material;
+        auto& lit = highlight_material;
+        auto& unlit = standard_material;
         auto& normal_depth = settings.normal_depth_material;
 
         // Update lit from GUI
