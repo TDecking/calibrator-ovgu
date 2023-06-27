@@ -33,6 +33,7 @@ target_sources(calibrator PRIVATE
     src/data.cpp
     src/gui_state.cpp
     src/pointinfo_widget.cpp
+    src/utils.cpp
 )
 
 if(WIN32)
