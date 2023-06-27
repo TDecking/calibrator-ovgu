@@ -13,7 +13,7 @@ class Entry {
     const open3d::geometry::PointCloud base;
 
     /// <summary>
-    /// The transformed data. Equal 
+    /// The transformed data. Equal to `base` with `get_transformation()` applied
     /// </summary>
     open3d::geometry::PointCloud transformed;
 
@@ -34,6 +34,11 @@ public:
     /// The name of the dataset.
     /// </summary>
     std::string name;
+
+    /// <summary>
+    /// Contructor that creates an Entry with zero points.
+    /// </summary>
+    inline Entry(const std::string& path_) : path(path_), name(), transformations(), base({}), transformed({}) {}
 
     /// <summary>
     /// Copy Contructor
@@ -66,6 +71,12 @@ public:
     /// </summary>
     /// <returns></returns>
     const open3d::geometry::PointCloud& get_transformed();
+
+    /// <summary>
+    /// Returns the internal transformation.
+    /// </summary>
+    /// <returns></returns>
+    Eigen::Matrix4d get_transformation();
 
 private:
     /// <summary>

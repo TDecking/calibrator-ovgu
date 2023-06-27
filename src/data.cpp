@@ -1,18 +1,8 @@
 #include <data.h>
 
 
-Eigen::Matrix4d merge(const std::vector<Eigen::Matrix4d>& transformations) {
-    Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
-
-    for (const Eigen::Matrix4d& t : transformations) {
-        result *= t;
-    }
-
-    return result;
-}
-
 void Entry::recalculate_transform() {
-    Eigen::Matrix4d t = merge(transformations);
+    Eigen::Matrix4d t = get_transformation();
 
     for (int i = 0; i < base.points_.size(); i++) {
         Eigen::Vector3d p(base.points_.at(i));
@@ -31,6 +21,19 @@ Entry::Entry(const Entry& arg):
     transformations(arg.transformations),
     name(arg.name)
 {}
+
+
+Eigen::Matrix4d Entry::get_transformation() {
+    Eigen::Matrix4d result = Eigen::Matrix4d::Identity();
+
+    for (const Eigen::Matrix4d& t : transformations) {
+        // Be careful with operator ordering: transormations that get applied
+        // first are on the right.
+        result = t * result;
+    }
+
+    return result;
+}
 
 
 open3d::geometry::PointCloud load(std::string path, std::function<void(double)> UpdateProgress) {
