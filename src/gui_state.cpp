@@ -238,3 +238,48 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
     help_camera->SetVisible(false);
     window_ptr->AddChild(help_camera);
 }
+
+void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
+    auto scene3d = scene_wgt->GetScene();
+
+    // Only update point cloud that got changed
+    if (only_update_selected && entry_index >= 0) {
+        scene3d->ShowAxes(true);
+        scene3d->RemoveGeometry(current_entry->path);
+        const open3d::geometry::PointCloud& cloud = current_entry->get_transformed();
+        scene3d->AddGeometry(current_entry->path, &cloud, settings.unlit_material);
+    }
+    else {
+        scene3d->ClearGeometry();
+
+        for (int i = 0; i < loaded_entries.size(); i++) {
+            std::shared_ptr<Entry> entry = NULL;
+            if (i != entry_index) {
+                entry = loaded_entries.at(i);
+            }
+            else {
+                entry = current_entry;
+            }
+
+            const open3d::geometry::PointCloud& cloud = entry->get_transformed();
+
+            if (i != entry_index) {
+                scene3d->AddGeometry(entry->path, &cloud, settings.lit_material);
+            }
+            else {
+                scene3d->AddGeometry(entry->path, &cloud, settings.unlit_material);
+            }
+        }
+
+        scene3d->ShowAxes(true);
+    }
+
+    auto& bounds = scene3d->GetBoundingBox();
+
+    if (!keep_camera) {
+        scene_wgt->SetupCamera(60.0, bounds, bounds.GetCenter().cast<float>());
+    }
+
+    // Make sure scene is redrawn
+    scene_wgt->ForceRedraw();
+}

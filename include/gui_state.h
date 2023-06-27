@@ -27,6 +27,8 @@ enum MenuId {
 
 struct GuiState {
     std::vector<std::shared_ptr<Entry>> loaded_entries;
+    std::shared_ptr<Entry> current_entry;
+    int entry_index;
 
     std::shared_ptr<gui::SceneWidget> scene_wgt;
     std::shared_ptr<gui::VGrid> help_keys;
@@ -252,4 +254,6 @@ public:
         // Update normal/depth from GUI
         normal_depth.point_size = materials.point_size;
     }
+
+    void set_scene(bool only_update_selected, bool keep_camera);
 };
