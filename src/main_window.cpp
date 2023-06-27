@@ -127,99 +127,10 @@ MainWindow::MainWindow(const std::string& title, int width, int height)
     gui_state = std::make_unique<GuiState>((MainWindow*)this);
 }
 
-MainWindow::MainWindow(
-    const std::vector<std::shared_ptr<Entry>>
-    & entries,
-    const std::string& title,
-    int width,
-    int height,
-    int left,
-    int top)
-    : gui::Window(title, left, top, width, height)
-{
-    gui_state = std::make_unique<GuiState>((MainWindow*)this);
-    SetEntries(entries);  // also updates the camera
-
-    // Create a message processor for incoming messages.
-    auto on_geometry = [this](std::shared_ptr<open3d::geometry::PointCloud> geom,
-        const std::string& path, int time,
-        const std::string& layer) {
-            // Rather than duplicating the logic to figure out the correct material,
-            // just add with the default material and pretend the user changed the
-            // current material and update everyone's material.
-            gui_state->scene_wgt->GetScene()->AddGeometry(path, geom.get(), rendering::MaterialRecord());
-            gui_state->UpdateFromModel(GetRenderer(), true);
-    };
-}
-
 MainWindow::~MainWindow() {}
 
 void MainWindow::SetTitle(const std::string& title) {
     Super::SetTitle(title.c_str());
-}
-
-
-void MainWindow::SetEntries(const std::vector<std::shared_ptr<Entry>>& point_clouds) {
-    auto scene3d = gui_state->scene_wgt->GetScene();
-    scene3d->ClearGeometry();
-
-    gui_state->SetMaterialsToDefault();
-
-    rendering::MaterialRecord loaded_material;
-
-    for (int i = 0; i < point_clouds.size(); i++) {
-        // If a point cloud or mesh has no vertex colors or a single uniform
-        // color (usually white), then we want to display it normally, that
-        // is, lit. But if the cloud/mesh has differing vertex colors, then
-        // we assume that the vertex colors have the lighting value baked in
-        // (for example, fountain.ply at http://qianyi.info/scenedata.html)
-        auto& entry = gui_state->loaded_entries.at(i);
-        const open3d::geometry::PointCloud& cloud = entry->get_transformed();
-        if (cloud.HasColors() && !PointCloudHasUniformColor(cloud)) {
-            loaded_material.shader = "defaultUnlit";
-        }
-        else {
-            loaded_material.shader = "defaultLit";
-        }
-        scene3d->AddGeometry(entry->path, &cloud, loaded_material);
-    }
-
-    gui_state->settings.model.SetDisplayingPointClouds(true);
-    if (!gui_state->settings.model.GetUserHasChangedLightingProfile()) {
-        auto& profile =
-            GuiSettingsModel::GetDefaultPointCloudLightingProfile();
-        gui_state->settings.model.SetLightingProfile(profile);
-    }
-
-    auto type = gui_state->settings.model.GetMaterialType();
-    if (type == GuiSettingsModel::MaterialType::LIT ||
-        type == GuiSettingsModel::MaterialType::UNLIT) {
-        if (loaded_material.shader == "defaultUnlit") {
-            gui_state->settings.model.SetMaterialType(
-                GuiSettingsModel::MaterialType::UNLIT);
-        }
-        else {
-            gui_state->settings.model.SetMaterialType(
-                GuiSettingsModel::MaterialType::LIT);
-        }
-    }
-
-    // Setup UI for loaded model/point cloud
-    gui_state->settings.model.UnsetCustomDefaultColor();
-    gui_state->settings.view->ShowFileMaterialEntry(false);
-    gui_state->settings.view->Update();  // make sure prefab material is correct
-
-    auto& bounds = scene3d->GetBoundingBox();
-    gui_state->scene_wgt->SetupCamera(60.0, bounds,
-        bounds.GetCenter().cast<float>());
-
-    // Setup for raw mode if enabled...
-    if (gui_state->basic_mode_enabled_) {
-        scene3d->GetScene()->SetSunLightDirection(scene3d->GetCamera()->GetForwardVector());
-    }
-
-    // Make sure scene is redrawn
-    gui_state->scene_wgt->ForceRedraw();
 }
 
 void MainWindow::Layout(const gui::LayoutContext& context) {
@@ -227,7 +138,7 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
     const auto em = context.theme.font_size;
     gui_state->scene_wgt->SetFrame(r);
 
-    // Draw help keys HUD in upper right (TODO: overlaps with settings)
+    // Draw help keys HUD in upper right
     const auto pref = gui_state->help_keys->CalcPreferredSize(
         context, gui::Widget::Constraints());
     gui_state->help_keys->SetFrame(gui::Rect(r.width - pref.width, r.y, pref.width, pref.height));
@@ -239,15 +150,6 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
     gui_state->help_camera->SetFrame(gui::Rect(0, r.height + r.y - prefcam.height,
         prefcam.width, prefcam.height));
     gui_state->help_camera->Layout(context);
-
-    // Settings in upper right
-    const auto LIGHT_SETTINGS_WIDTH = 18 * em;
-    auto light_settings_size = gui_state->settings.wgt_base->CalcPreferredSize(
-        context, gui::Widget::Constraints());
-    gui::Rect lightSettingsRect(r.width - LIGHT_SETTINGS_WIDTH, r.y,
-        LIGHT_SETTINGS_WIDTH,
-        r.height < light_settings_size.height ? r.height : light_settings_size.height);
-    gui_state->settings.wgt_base->SetFrame(lightSettingsRect);
 
     // Draw point info in the upper left
     static int MIN_WIDTH = 0;
@@ -351,15 +253,6 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         gui::Application::GetInstance().Quit();
         break;
     case SETTINGS_LIGHT_AND_MATERIALS: {
-        auto visibility = !gui_state->settings.wgt_base->IsVisible();
-        gui_state->settings.wgt_base->SetVisible(visibility);
-        auto menubar = gui::Application::GetInstance().GetMenubar();
-        menubar->SetChecked(SETTINGS_LIGHT_AND_MATERIALS, visibility);
-
-        // We need relayout because materials settings pos depends on light
-        // settings visibility
-        this->SetNeedsLayout();
-
         break;
     }
     case HELP_KEYS: {
