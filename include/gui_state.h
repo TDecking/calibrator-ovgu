@@ -262,5 +262,7 @@ public:
         normal_depth.point_size = materials.point_size;
     }
 
+    void add_entry(const std::string& path, std::function<void(double)> update_progress, gui::Window* window);
+
     void set_scene(bool only_update_selected, bool keep_camera);
 };

@@ -282,33 +282,7 @@ void MainWindow::LoadCloud(const std::string& path) {
                 this,
                 [progressbar, value]() { progressbar->SetValue(value); });
         };
-
-        std::shared_ptr<Entry> entry = NULL;
-
-        try {
-            entry = std::make_shared<Entry>(path, UpdateProgress);
-            gui_state->loaded_entries.push_back(entry);
-        }
-        catch (...) {
-            entry.reset();
-        }
-
-        if (entry) {
-            const auto& entries = gui_state->loaded_entries;
-            gui::Application::GetInstance().PostToMainThread(
-                this, [this, entries]() {
-                    SetEntries(entries);
-                    CloseDialog();
-                });
-        }
-        else {
-            gui::Application::GetInstance().PostToMainThread(this, [this,
-                path]() {
-                    CloseDialog();
-                    auto msg = std::string("Could not load '") + path + "'.";
-                    ShowMessageBox("Error", msg.c_str());
-                });
-        }
+        this->gui_state->add_entry(path, UpdateProgress, this);
     });
 }
 
@@ -442,8 +416,5 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
 }
 
 void MainWindow::OnDragDropped(const char* path) {
-    auto title = std::string("Open3D - ") + path;
-    this->SetTitle(title);
-    auto vis = this;
-    vis->LoadCloud(path);
+    this->LoadCloud(path);
 }

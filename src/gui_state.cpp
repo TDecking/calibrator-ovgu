@@ -348,6 +348,40 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
     window_ptr->AddChild(help_camera);
 }
 
+
+void GuiState::add_entry(const std::string& path, std::function<void(double)> update_progress, gui::Window* window) {
+    std::shared_ptr<Entry> entry = NULL;
+
+    try {
+        entry = std::make_shared<Entry>(path, update_progress);
+    }
+    catch (...) {
+        entry.reset();
+    }
+
+    if (entry) {
+        gui::Application::GetInstance().PostToMainThread(
+            window, [this, window, entry, path]() {
+                this->loaded_entries.push_back(entry);
+                this->point_info->entries->AddItem(path.c_str());
+                if (this->entry_index < 0) {
+                    this->current_entry = entry;
+                    this->entry_index = 0;
+                    this->point_info->entries->SetSelectedIndex(0);
+                }
+                this->set_scene(false, false);
+                window->CloseDialog();
+            });
+    }
+    else {
+        gui::Application::GetInstance().PostToMainThread(window, [this, window, path]() {
+                window->CloseDialog();
+                auto msg = std::string("Could not load '") + path + "'.";
+                window->ShowMessageBox("Error", msg.c_str());
+            });
+    }
+}
+
 void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
     auto scene3d = scene_wgt->GetScene();
 
