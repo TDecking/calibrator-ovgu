@@ -252,9 +252,6 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
     case FILE_QUIT:
         gui::Application::GetInstance().Quit();
         break;
-    case SETTINGS_LIGHT_AND_MATERIALS: {
-        break;
-    }
     case HELP_KEYS: {
         bool is_visible = !gui_state->help_keys->IsVisible();
         gui_state->help_keys->SetVisible(is_visible);

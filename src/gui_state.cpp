@@ -96,12 +96,6 @@ void GuiState::init_menu() {
 #endif
     menu->AddMenu("File", file_menu);
 
-    auto settings_menu = std::make_shared<gui::Menu>();
-    settings_menu->AddItem("Lighting & Materials",
-        SETTINGS_LIGHT_AND_MATERIALS);
-    settings_menu->SetChecked(SETTINGS_LIGHT_AND_MATERIALS, true);
-    menu->AddMenu("Settings", settings_menu);
-
     auto help_menu = std::make_shared<gui::Menu>();
     help_menu->AddItem("Show Controls", HELP_KEYS);
     help_menu->AddItem("Show Camera Info", HELP_CAMERA);
