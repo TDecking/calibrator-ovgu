@@ -90,6 +90,7 @@ void GuiState::init_menu() {
     auto file_menu = std::make_shared<gui::Menu>();
     file_menu->AddItem("Open...", FILE_OPEN, gui::KEY_O);
     file_menu->AddItem("Export Current Image...", FILE_EXPORT_RGB);
+    file_menu->AddItem("Undo", UNDO_TRANSFORMATION);
     file_menu->AddSeparator();
 #if defined(WIN32)
     file_menu->AddItem("Exit", FILE_QUIT);
@@ -305,7 +306,6 @@ void GuiState::init_lighting(const GuiSettingsModel::LightingProfile& lighting) 
     render_scene->SetSunLightDirection(lighting.sun_dir);
     render_scene->EnableSunLight(lighting.sun_enabled);
 }
-
 
 void GuiState::add_entry(const std::string& path, std::function<void(double)> update_progress, gui::Window* window) {
     std::shared_ptr<Entry> entry = NULL;

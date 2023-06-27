@@ -22,7 +22,8 @@ enum MenuId {
     HELP_CAMERA,
     HELP_ABOUT,
     HELP_CONTACT,
-    HELP_DEBUG
+    HELP_DEBUG,
+    UNDO_TRANSFORMATION
 };
 
 //
