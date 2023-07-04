@@ -141,6 +141,7 @@ void GuiState::init_point_info() {
             /// Making a distinct copy keeps the original cloud intact, allowing
             /// free manipulation.
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(index));
+            this->colorize_current_entry();
             this->entry_index = index;
             break;
         }
@@ -159,6 +160,7 @@ void GuiState::init_point_info() {
             if (index >= 0) {
                 const Entry& e = *this->loaded_entries.at(index);
                 this->current_entry = std::make_shared<Entry>(e);
+                this->colorize_current_entry();
                 this->entry_index = index;
 
                 this->point_info->entries->SetSelectedIndex(index);
@@ -209,6 +211,7 @@ void GuiState::init_point_info() {
             Eigen::Matrix4d t = make_matrix(event_.x_rotation, event_.y_rotation, event_.z_rotation, event_.x_translation, event_.y_translation, event_.z_translation);
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
             this->current_entry->do_transform(t);
+            this->colorize_current_entry();
             only_update_selected = true;
             break;
         }
@@ -219,6 +222,7 @@ void GuiState::init_point_info() {
             Eigen::Matrix4d t = make_matrix(event_.x_rotation, event_.y_rotation, event_.z_rotation, event_.x_translation, event_.y_translation, event_.z_translation);
             this->loaded_entries.at(entry_index)->do_transform(t);
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
+            this->colorize_current_entry();
             this->point_info->ResetSliders();
             only_update_selected = true;
             break;
@@ -326,6 +330,7 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
                 this->point_info->entries->AddItem(path.c_str());
                 if (this->entry_index < 0) {
                     this->current_entry = entry;
+                    this->colorize_current_entry();
                     this->entry_index = 0;
                     this->point_info->entries->SetSelectedIndex(0);
                 }
@@ -388,4 +393,14 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
 
     // Make sure scene is redrawn
     scene_wgt->ForceRedraw();
+}
+
+void GuiState::colorize_current_entry() {
+    auto& cloud = this->current_entry->get_transformed();
+    cloud.colors_.clear();
+
+    for (int i = 0; i < cloud.points_.size(); i++) {
+        Eigen::Vector3d c(0.5, 0.8, 0.0);
+        cloud.colors_.push_back(c);
+    }
 }

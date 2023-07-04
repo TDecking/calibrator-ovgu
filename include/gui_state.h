@@ -77,6 +77,7 @@ public:
     void init_point_info();
     void init_materials();
     void init_lighting(const GuiSettingsModel::LightingProfile& lighting);
+    void colorize_current_entry();
 
     void add_entry(const std::string& path, std::function<void(double)> update_progress, gui::Window* window);
 
