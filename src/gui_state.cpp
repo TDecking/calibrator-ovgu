@@ -329,7 +329,7 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
                 this->loaded_entries.push_back(entry);
                 this->point_info->entries->AddItem(path.c_str());
                 if (this->entry_index < 0) {
-                    this->current_entry = entry;
+                    this->current_entry = std::make_shared<Entry>(*entry);
                     this->colorize_current_entry();
                     this->entry_index = 0;
                     this->point_info->entries->SetSelectedIndex(0);
