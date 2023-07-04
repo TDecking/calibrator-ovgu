@@ -67,10 +67,10 @@ public:
     std::optional<Eigen::Matrix4d> undo_transform();
 
     /// <summary>
-    /// Return a read_only reference to the transformed data.
+    /// Return a reference to the transformed data.
     /// </summary>
     /// <returns></returns>
-    const open3d::geometry::PointCloud& get_transformed();
+    open3d::geometry::PointCloud& get_transformed();
 
     /// <summary>
     /// Returns the internal transformation.

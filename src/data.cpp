@@ -85,6 +85,6 @@ std::optional<Eigen::Matrix4d> Entry::undo_transform() {
     return result;
 }
 
-const open3d::geometry::PointCloud& Entry::get_transformed() {
+open3d::geometry::PointCloud& Entry::get_transformed() {
     return transformed;
 }
