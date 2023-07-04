@@ -29,11 +29,31 @@ enum MenuId {
 //
 
 struct GuiState {
+    /// <summary>
+    /// All point clouds currently loaded.
+    /// </summary>
     std::vector<std::shared_ptr<Entry>> loaded_entries;
+
+    /// <summary>
+    /// The current point cloud selected by the user.
+    /// Originates from `loaded_entries`, but a distinct copy.
+    /// </summary>
     std::shared_ptr<Entry> current_entry;
+
+    /// <summary>
+    /// Accessing `loaded_entries` with this index results in the point cloud in `current_entry`
+    /// (sans possible transformations).
+    /// </summary>
     int entry_index;
 
+    /// <summary>
+    /// This widget contains the tools to manipulate point clouds.
+    /// </summary>
     std::shared_ptr<PointInfo> point_info;
+
+    /// <summary>
+    /// This widget is used to render the clouds.
+    /// </summary>
     std::shared_ptr<gui::SceneWidget> scene_wgt;
 
     std::shared_ptr<gui::VGrid> help_keys;
@@ -59,5 +79,12 @@ public:
     void init_lighting(const GuiSettingsModel::LightingProfile& lighting);
 
     void add_entry(const std::string& path, std::function<void(double)> update_progress, gui::Window* window);
+
+    /// <summary>
+    /// Re-renders existing point clouds.
+    /// </summary>
+    /// <param name="only_update_selected">Settings this value to true only re-renders the cloud in current_entry.
+    /// Doing so may heavily increase performance.</param>
+    /// <param name="keep_camera">Settings this value to true ensures that the camera stays at its current location.</param>
     void set_scene(bool only_update_selected, bool keep_camera);
 };

@@ -138,6 +138,8 @@ void GuiState::init_point_info() {
         switch (event_.type) {
         case INDEX_CHANGED: {
             int index = event_.entry_index;
+            /// Making a distinct copy keeps the original cloud intact, allowing
+            /// free manipulation.
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(index));
             this->entry_index = index;
             break;
@@ -355,6 +357,9 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
 
         for (int i = 0; i < loaded_entries.size(); i++) {
             std::shared_ptr<Entry> entry = NULL;
+
+            // Ignore the cloud in loaded_entries,
+            // if it is used for current_entry.
             if (i != entry_index) {
                 entry = loaded_entries.at(i);
             }
