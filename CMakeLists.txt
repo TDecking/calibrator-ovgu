@@ -34,6 +34,11 @@ target_sources(calibrator PRIVATE
     src/gui_state.cpp
     src/pointinfo_widget.cpp
     src/utils.cpp
+
+    src/icp/ICP.cpp
+    src/icp/KdTree.cpp
+    src/icp/svd.cpp
+    src/icp.cpp
 )
 
 if(WIN32)
