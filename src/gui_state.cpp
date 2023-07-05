@@ -228,6 +228,62 @@ void GuiState::init_point_info() {
             break;
         }
         case MERGE_CLICKED: {
+            only_update_selected = true;
+
+            if (loaded_entries.size() < 2) {
+                this->window_ptr->ShowMessageBox("", "Es m\xC3\xBCssen mindestens zwei Punktewolken geladen sein, damit diese Funktion verf\xC3\xBCgbar ist.");
+                return;
+            }
+
+            auto entries = std::make_shared<gui::Combobox>();
+            for (int i = 0; i < loaded_entries.size(); i++) {
+                if (i != entry_index) {
+                    entries->AddItem(loaded_entries.at(i)->name.c_str());
+                }
+            }
+            entries->SetSelectedIndex(0);
+
+            auto ok = std::make_shared<gui::Button>("OK");
+            ok->SetOnClicked([this, entries]() {
+                int i = entries->GetSelectedIndex();
+                if (i >= this->entry_index) {
+                    i += 1;
+                }
+
+                // Do not use current_entry, since it is recolored.
+                auto& cloud_1 = this->loaded_entries.at(entry_index)->get_transformed();
+                auto& cloud_2 = this->loaded_entries.at(i)->get_transformed();
+
+                open3d::geometry::PointCloud cloud = open3d::geometry::PointCloud(cloud_1);
+                cloud += cloud_2;
+
+                std::shared_ptr<Entry> entry = std::make_shared<Entry>(cloud);
+
+                this->loaded_entries.push_back(entry);
+                this->point_info->entries->AddItem(entry->path.c_str());
+                this->set_scene(false, true);
+
+                this->window_ptr->CloseDialog();
+                });
+
+            auto cancel = std::make_shared<gui::Button>("Abbrechen");
+            cancel->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
+
+            auto layout = std::make_shared<gui::Vert>(0, gui::Margins(this->window_ptr->GetTheme().font_size));
+            layout->AddChild(gui::Horiz::MakeCentered(entries));
+            layout->AddFixed(this->window_ptr->GetTheme().font_size);
+
+            auto buttons = std::make_shared<gui::Horiz>(0, this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(ok);
+            buttons->AddFixed(this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(cancel);
+
+            layout->AddChild(gui::Horiz::MakeCentered(buttons));
+
+            auto dialog = std::make_shared<gui::Dialog>("Verschmelzen");
+            dialog->AddChild(layout);
+
+            this->window_ptr->ShowDialog(dialog);
             break;
         }
         case READ_MATRIX_CLICKED: {
