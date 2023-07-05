@@ -1,6 +1,7 @@
 #include <data.h>
 #include <main_window.h>
 #include <gui_state.h>
+#include <icp.h>
 
 std::shared_ptr<gui::VGrid> CreateHelpDisplay(gui::Window* window) {
     auto& theme = window->GetTheme();
@@ -177,6 +178,53 @@ void GuiState::init_point_info() {
             break;
         }
         case ICP_CLICKED: {
+            only_update_selected = true;
+
+            if (loaded_entries.size() < 2) {
+                this->window_ptr->ShowMessageBox("", "Es m\xC3\xBCssen mindestens zwei Punktewolken geladen sein, damit diese Funktion verf\xC3\xBCgbar ist.");
+                return;
+            }
+
+            auto entries = std::make_shared<gui::Combobox>();
+            for (int i = 0; i < loaded_entries.size(); i++) {
+                if (i != entry_index) {
+                    entries->AddItem(loaded_entries.at(i)->name.c_str());
+                }
+            }
+            entries->SetSelectedIndex(0);
+
+            auto ok = std::make_shared<gui::Button>("OK");
+            ok->SetOnClicked([this, entries]() {
+                int i = entries->GetSelectedIndex();
+                if (i >= this->entry_index) {
+                    i += 1;
+                }
+
+                Eigen::Matrix4d matrix = iterative_closest_point(this->current_entry->get_transformed().points_, this->loaded_entries.at(i)->get_transformed().points_);
+
+                this->current_entry->do_transform(matrix);
+
+                this->window_ptr->CloseDialog();
+                });
+
+            auto cancel = std::make_shared<gui::Button>("Abbrechen");
+            cancel->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
+
+            auto layout = std::make_shared<gui::Vert>(0, gui::Margins(this->window_ptr->GetTheme().font_size));
+            layout->AddChild(gui::Horiz::MakeCentered(entries));
+            layout->AddFixed(this->window_ptr->GetTheme().font_size);
+
+            auto buttons = std::make_shared<gui::Horiz>(0, this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(ok);
+            buttons->AddFixed(this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(cancel);
+
+            layout->AddChild(buttons);
+
+            auto dialog = std::make_shared<gui::Dialog>("Ann\xC3\xB4hern");
+            dialog->AddChild(layout);
+
+            this->window_ptr->ShowDialog(dialog);
             break;
         }
         case MERGE_CLICKED: {
