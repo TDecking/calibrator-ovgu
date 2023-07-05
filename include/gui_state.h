@@ -7,6 +7,8 @@
 #include "open3d/visualization/visualizer/GuiWidgets.h"
 #include "open3d/visualization/gui/FileDialog.h"
 
+#include <open3d/visualization/gui/NumberEdit.h>
+
 #include "utils.h"
 #include "pointinfo_widget.h"
 

@@ -287,6 +287,79 @@ void GuiState::init_point_info() {
             break;
         }
         case READ_MATRIX_CLICKED: {
+            only_update_selected = true;
+
+            auto grid = std::make_shared<gui::VGrid>(4, 0, gui::Margins(this->window_ptr->GetTheme().font_size));
+            auto label = std::make_shared<gui::Label>("Determinante: 1.0");
+
+            std::vector<std::shared_ptr<gui::NumberEdit>> editors;
+
+            for (int i = 0; i < 12; i++) {
+                editors.push_back(std::move(std::make_shared<gui::NumberEdit>(gui::NumberEdit::Type::DOUBLE)));
+                auto& edit = editors.at(i);
+
+                if (i == 0 || i == 5 || i == 10) {
+                    edit->SetValue(1.0);
+                }
+
+                edit->SetDecimalPrecision(8);
+                edit->SetOnValueChanged([&editors, label](double) {
+                    Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
+
+                    for (int i = 0; i < 12; i++) {
+                        m(i) = editors[i]->GetDoubleValue();
+                    }
+
+                    m(3, 3) = 1.0;
+
+                    std::string str = "Determinante:" + std::to_string(m.determinant());
+                    label->SetText(str.c_str());
+                    });
+
+                grid->AddChild(edit);
+            }
+
+            grid->AddChild(std::make_shared<gui::Label>("0.0"));
+            grid->AddChild(std::make_shared<gui::Label>("0.0"));
+            grid->AddChild(std::make_shared<gui::Label>("0.0"));
+            grid->AddChild(std::make_shared<gui::Label>("1.0"));
+
+            auto cancel = std::make_shared<gui::Button>("Abbrechen");
+            cancel->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
+
+            auto ok = std::make_shared<gui::Button>("OK");
+            ok->SetOnClicked([this, &editors]() {
+                Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
+
+                for (int i = 0; i < 12; i++) {
+                    m(i) = editors[i]->GetDoubleValue();
+                }
+
+                m(3, 3) = 1.0;
+
+                this->current_entry->do_transform(m);
+                this->window_ptr->CloseDialog();
+                });
+
+            auto buttons = std::make_shared<gui::Horiz>(0, this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(ok);
+            buttons->AddFixed(this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(cancel);
+
+            auto layout = std::make_shared<gui::Vert>(0, gui::Margins(this->window_ptr->GetTheme().font_size));
+
+            layout->AddChild(gui::Horiz::MakeCentered(grid));
+            layout->AddChild(gui::Horiz::MakeCentered(label));
+            layout->AddChild(gui::Horiz::MakeCentered(buttons));
+
+
+            auto dialog = std::make_shared<gui::Dialog>("Matrix");
+            dialog->AddChild(layout);
+
+            this->window_ptr->ShowDialog(dialog);
+
+            open3d::utility::LogInfo("ShowDialog call over");
+
             break;
         }
         case SHOW_MATRIX_CLICKED: {
