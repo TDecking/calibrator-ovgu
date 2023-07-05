@@ -202,7 +202,9 @@ void GuiState::init_point_info() {
 
                 Eigen::Matrix4d matrix = iterative_closest_point(this->current_entry->get_transformed().points_, this->loaded_entries.at(i)->get_transformed().points_);
 
-                this->current_entry->do_transform(matrix);
+                this->loaded_entries.at(entry_index)->do_transform(matrix);
+                this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
+                this->colorize_current_entry();
 
                 this->window_ptr->CloseDialog();
                 });
