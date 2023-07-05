@@ -1,15 +1,54 @@
 #include <data.h>
 
 
+#include <thread>
+
 void Entry::recalculate_transform() {
     Eigen::Matrix4d t = get_transformation();
 
-    for (int i = 0; i < base.points_.size(); i++) {
-        Eigen::Vector3d p(base.points_.at(i));
-        Eigen::Vector4d extended;
-        extended << p, 1;
-        Eigen::Vector4d result(t * extended);
-        transformed.points_.at(i) = result.head<3>();
+    if (base.points_.size() < 20000) {
+        for (int i = 0; i < base.points_.size(); i++) {
+            Eigen::Vector3d p(base.points_.at(i));
+            Eigen::Vector4d extended;
+            extended << p, 1;
+            Eigen::Vector4d result(t * extended);
+            transformed.points_.at(i) = result.head<3>();
+        }
+    }
+    else {
+        int core_count = std::thread::hardware_concurrency();
+        int start = 0;
+        int diff = base.points_.size() / core_count;
+
+        const Eigen::Vector3d* base_ptr = base.points_.data();
+        Eigen::Vector3d* transformed_ptr = transformed.points_.data();
+
+        std::vector<std::thread> threads;
+
+        for (int k = 0; k < core_count - 1; k++) {
+            threads.emplace_back([base_ptr, transformed_ptr, start, diff, &t]() {
+                    for (int i = start; i < start + diff; i++) {
+                        Eigen::Vector3d p(base_ptr[i]);
+                        Eigen::Vector4d extended;
+                        extended << p, 1;
+                        Eigen::Vector4d result(t * extended);
+                        transformed_ptr[i] = result.head<3>();
+                    }
+                });
+            start += diff;
+        }
+
+        for (int i = start; i < base.points_.size(); i++) {
+            Eigen::Vector3d p(base_ptr[i]);
+            Eigen::Vector4d extended;
+            extended << p, 1;
+            Eigen::Vector4d result(t * extended);
+            transformed_ptr[i] = result.head<3>();
+        }
+
+        for (int i = 0; i < threads.size(); i++) {
+            threads.at(i).join();
+        }
     }
 }
 
