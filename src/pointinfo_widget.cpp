@@ -24,6 +24,8 @@ PointInfoEvent::PointInfoEvent(PointInfo* point_info) {
     x_rotation = point_info->x_rotation->GetDoubleValue();
     y_rotation = point_info->y_rotation->GetDoubleValue();
     z_rotation = point_info->z_rotation->GetDoubleValue();
+
+    name = std::string(point_info->name_edit->GetText());
 }
 
 
@@ -39,7 +41,18 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     handler = [](PointInfoEvent& _) {};
 
     entries = std::make_shared<gui::Combobox>();
-    remove = std::make_shared<gui::Button>("L\xC3\xB6schen"); // "Löschen"
+    remove = std::make_shared<gui::Button>("L\xC3\xB6schen"); // "LÃ¶schen"
+
+    // Entry name
+
+    name_edit = std::make_shared<gui::TextEdit>();
+    auto name_edit_desc = std::make_shared<gui::Label>("Name");
+    auto name = std::make_shared<gui::Horiz>(grid_spacing);
+    name->AddChild(name_edit_desc);
+    name->AddChild(name_edit);
+
+    // Remove Button
+
 
     // Sliders
 
@@ -111,7 +124,7 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     // Other Buttons
 
     auto misc_buttons = std::make_shared<gui::Horiz>(grid_spacing);
-    icp = std::make_shared<gui::Button>("Algorithmisches Ann\xC3\xA4hern"); // "Algorithmisches Annähern"
+    icp = std::make_shared<gui::Button>("Algorithmisches Ann\xC3\xA4hern"); // "Algorithmisches Annï¿½hern"
     merge = std::make_shared<gui::Button>("Verschmelzen");
 
     misc_buttons->AddChild(icp);
@@ -131,6 +144,8 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     AddFixed(separation_height);
     AddChild(entries);
     AddFixed(separation_height);
+    AddChild(name);
+    AddFixed(separation_height);
     AddChild(remove);
     AddFixed(separation_height);
     AddChild(translation_vert);
@@ -143,6 +158,15 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     // Handle Events
 
     remove->SetOnClicked(make_button_handler(PointInfoEventType::REMOVE_CLICKED));
+
+    name_edit->SetOnValueChanged([this](const char* text) {
+        if (this->entries->GetNumberOfItems() == 0) return;
+        PointInfoEvent event_(this);
+        event_.name = std::string(text);
+        event_.type = PointInfoEventType::NAME_CHANGED;
+        this->handler(event_);
+        });
+
     icp->SetOnClicked(make_button_handler(PointInfoEventType::ICP_CLICKED));
     merge->SetOnClicked(make_button_handler(PointInfoEventType::MERGE_CLICKED));
     read_matrix->SetOnClicked(make_button_handler(PointInfoEventType::READ_MATRIX_CLICKED));
@@ -185,6 +209,11 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     z_rotation->SetOnMouseEvent(slider_mouse_handler);
 }
 
+
+void PointInfo::SetName(const char* name) {
+    this->entries->ChangeItem(this->entries->GetSelectedValue(), name);
+    this->name_edit->SetText(name);
+}
 
 void PointInfo::SetEventHandler(std::function<void(PointInfoEvent&)> handler) {
     this->handler = handler;

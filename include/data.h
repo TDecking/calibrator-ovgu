@@ -6,6 +6,8 @@
 
 #include <functional>
 
+#include <utils.h>
+
 class Entry {
     /// <summary>
     /// The original data.
@@ -25,8 +27,7 @@ class Entry {
 
 public:
     /// <summary>
-    /// The file path from which the data originates.
-    /// Also used to disambiguate entries for rendering.
+    /// Used to disambiguate entries for rendering.
     /// </summary>
     const std::string path;
 
@@ -38,7 +39,7 @@ public:
     /// <summary>
     /// Contructor that creates an Entry with zero points.
     /// </summary>
-    inline Entry(const std::string& path_) : path(path_), name(), transformations(), base(), transformed() {}
+    inline Entry(const std::string& path_) : path("cloud_" + std::to_string(id_counter++)), name(path_), transformations(), base(), transformed() {}
 
     /// <summary>
     /// Copy Contructor
@@ -50,7 +51,14 @@ public:
     /// Contructor that creates an Entry by loading data from a path.
     /// </summary>
     /// <param name="path">The file path. Expected to be the ply file format.</param>
-    Entry(const std::string path, std::function<void(double)> UpdateProgress);
+    /// <param name="update_progress">Callback for loading progress.</param>
+    Entry(const std::string path, std::function<void(double)> update_progress);
+
+    /// <summary>
+    /// Contructor that creates an Entry using a pre-existing cloud.
+    /// </summary>
+    /// <param name="cloud">Input cloud.</param>
+    Entry(const open3d::geometry::PointCloud& cloud);
 
     /// <summary>
     /// Add a transformation to the transformation stack.

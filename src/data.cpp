@@ -62,11 +62,14 @@ open3d::geometry::PointCloud load(std::string path, std::function<void(double)> 
 }
 
 Entry::Entry(const std::string path, std::function<void(double)> UpdateProgress):
-    path(path),
+    path("cloud_" + std::to_string(id_counter++)),
     base(load(path, UpdateProgress)),
     transformed(base),
     transformations(),
-    name() {
+    name(path) {
+}
+
+Entry::Entry(const open3d::geometry::PointCloud& cloud): path("cloud_" + std::to_string(id_counter++)), base(cloud), transformed(cloud), transformations(), name("") {
 }
 
 void Entry::do_transform(Eigen::Matrix4d transformation) {

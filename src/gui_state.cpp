@@ -143,6 +143,7 @@ void GuiState::init_point_info() {
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(index));
             this->colorize_current_entry();
             this->entry_index = index;
+            this->point_info->SetName(this->current_entry->name.c_str());
             break;
         }
         case REMOVE_CLICKED: {
@@ -164,6 +165,7 @@ void GuiState::init_point_info() {
                 this->entry_index = index;
 
                 this->point_info->entries->SetSelectedIndex(index);
+                this->point_info->SetName(this->current_entry->name.c_str());
             }
             else {
                 this->loaded_entries = {};
@@ -226,6 +228,15 @@ void GuiState::init_point_info() {
             this->point_info->ResetSliders();
             only_update_selected = true;
             break;
+        }
+        case NAME_CHANGED: {
+            if (this->loaded_entries.size() == 0) {
+                break;
+            }
+            this->current_entry->name = std::string(event_.name);
+            this->loaded_entries.at(this->entry_index)->name = event_.name;
+            this->point_info->SetName(event_.name.c_str());
+            return;
         }
         }
 
@@ -333,6 +344,7 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
                     this->colorize_current_entry();
                     this->entry_index = 0;
                     this->point_info->entries->SetSelectedIndex(0);
+                    this->point_info->SetName(this->current_entry->name.c_str());
                 }
                 this->set_scene(false, false);
                 window->CloseDialog();

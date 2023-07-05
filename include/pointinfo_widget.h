@@ -29,6 +29,7 @@ enum PointInfoEventType {
     SHOW_MATRIX_CLICKED,
     SLIDER_MOUSE_RELEASE,
     INDEX_CHANGED,
+    NAME_CHANGED,
     SLIDER_VALUE_CHANGED
 };
 
@@ -44,6 +45,8 @@ public:
     double y_rotation;
     double z_rotation;
 
+    std::string name;
+
     PointInfoEvent(PointInfo* point_info);
 };
 
@@ -54,10 +57,15 @@ public:
     PointInfo(int spacing, const gui::Margins& margins = gui::Margins());
 
     void SetEventHandler(std::function<void(PointInfoEvent&)> handler);
+    /// <summary>
+    /// Overwrites the displayed text for the currently selected point cloud.
+    /// </summary>
+    /// <param name="name">Name of the point cloud</param>
+    void SetName(const char* name);
     void ResetSliders();
     std::shared_ptr<gui::Combobox> entries;
 private:
-
+    std::shared_ptr<gui::TextEdit> name_edit;
     std::shared_ptr<gui::Button> remove;
 
     std::shared_ptr<MouseEventSlider> x_translation;
