@@ -178,8 +178,6 @@ void GuiState::init_point_info() {
             break;
         }
         case ICP_CLICKED: {
-            only_update_selected = true;
-
             if (loaded_entries.size() < 2) {
                 this->window_ptr->ShowMessageBox("", "Es m\xC3\xBCssen mindestens zwei Punktewolken geladen sein, damit diese Funktion verf\xC3\xBCgbar ist.");
                 return;
@@ -207,6 +205,7 @@ void GuiState::init_point_info() {
                 this->colorize_current_entry();
 
                 this->window_ptr->CloseDialog();
+                this->set_scene(true, true);
                 });
 
             auto cancel = std::make_shared<gui::Button>("Abbrechen");
