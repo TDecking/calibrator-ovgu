@@ -150,8 +150,8 @@ void GuiState::init_point_info() {
         case REMOVE_CLICKED: {
             int index = this->entry_index;
 
-            const char* path = this->loaded_entries.at(index)->path.c_str();
-            this->point_info->entries->RemoveItem(path);
+            const char* name = this->loaded_entries.at(index)->name.c_str();
+            this->point_info->entries->RemoveItem(name);
             this->loaded_entries.erase(this->loaded_entries.begin() + index);
 
             index -= 1;
@@ -261,7 +261,7 @@ void GuiState::init_point_info() {
                 std::shared_ptr<Entry> entry = std::make_shared<Entry>(cloud);
 
                 this->loaded_entries.push_back(entry);
-                this->point_info->entries->AddItem(entry->path.c_str());
+                this->point_info->entries->AddItem(entry->id.c_str());
                 this->set_scene(false, true);
 
                 this->window_ptr->CloseDialog();
@@ -543,9 +543,9 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
     // Only update point cloud that got changed
     if (only_update_selected && entry_index >= 0) {
         scene3d->ShowAxes(true);
-        scene3d->RemoveGeometry(current_entry->path);
+        scene3d->RemoveGeometry(current_entry->id);
         const open3d::geometry::PointCloud& cloud = current_entry->get_transformed();
-        scene3d->AddGeometry(current_entry->path, &cloud, highlight_material);
+        scene3d->AddGeometry(current_entry->id, &cloud, highlight_material);
     }
     else {
         scene3d->ClearGeometry();
@@ -565,10 +565,10 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
             const open3d::geometry::PointCloud& cloud = entry->get_transformed();
 
             if (i != entry_index) {
-                scene3d->AddGeometry(entry->path, &cloud, standard_material);
+                scene3d->AddGeometry(entry->id, &cloud, standard_material);
             }
             else {
-                scene3d->AddGeometry(entry->path, &cloud, highlight_material);
+                scene3d->AddGeometry(entry->id, &cloud, highlight_material);
             }
         }
 

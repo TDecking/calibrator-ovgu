@@ -29,7 +29,7 @@ public:
     /// <summary>
     /// Used to disambiguate entries for rendering.
     /// </summary>
-    const std::string path;
+    const std::string id;
 
     /// <summary>
     /// The name of the dataset.
@@ -39,7 +39,7 @@ public:
     /// <summary>
     /// Contructor that creates an Entry with zero points.
     /// </summary>
-    inline Entry(const std::string& path_) : path("cloud_" + std::to_string(id_counter++)), name(path_), transformations(), base(), transformed() {}
+    inline Entry(const std::string& path_) : id("cloud_" + std::to_string(id_counter++)), name(path_), transformations(), base(), transformed() {}
 
     /// <summary>
     /// Copy Contructor

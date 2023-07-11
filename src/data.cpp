@@ -54,7 +54,7 @@ void Entry::recalculate_transform() {
 
 
 Entry::Entry(const Entry& arg):
-    path(arg.path),
+    id(arg.id),
     base(arg.base),
     transformed(arg.transformed),
     transformations(arg.transformations),
@@ -101,14 +101,14 @@ open3d::geometry::PointCloud load(std::string path, std::function<void(double)> 
 }
 
 Entry::Entry(const std::string path, std::function<void(double)> UpdateProgress):
-    path("cloud_" + std::to_string(id_counter++)),
+    id("cloud_" + std::to_string(id_counter++)),
     base(load(path, UpdateProgress)),
     transformed(base),
     transformations(),
     name(path) {
 }
 
-Entry::Entry(const open3d::geometry::PointCloud& cloud): path("cloud_" + std::to_string(id_counter++)), base(cloud), transformed(cloud), transformations(), name("") {
+Entry::Entry(const open3d::geometry::PointCloud& cloud): id("cloud_" + std::to_string(id_counter++)), base(cloud), transformed(cloud), transformations(), name("") {
 }
 
 void Entry::do_transform(Eigen::Matrix4d transformation) {
