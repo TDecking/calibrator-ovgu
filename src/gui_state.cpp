@@ -594,7 +594,7 @@ void GuiState::colorize_current_entry() {
     cloud.colors_.clear();
 
     for (int i = 0; i < cloud.points_.size(); i++) {
-        Eigen::Vector3d c(0.5, 0.8, 0.0);
+        Eigen::Vector3d c(1.0, 0.55, 0.0);
         cloud.colors_.push_back(c);
     }
 }
