@@ -412,7 +412,17 @@ void GuiState::init_point_info() {
             if (this->loaded_entries.size() == 0) {
                 break;
             }
-            this->current_entry->name = std::string(event_.name);
+
+            auto name = std::string(event_.name);
+
+            for (int i = 0; i < this->loaded_entries.size(); i++) {
+                if (i != this->entry_index && this->loaded_entries.at(i)->name == name) {
+                    this->window_ptr->ShowMessageBox("Umbenennung fehlgeschlagen", "Es existiert bereits eine Punktewolke mit diesem Namen");
+                    return;
+                }
+            }
+
+            this->current_entry->name = name;
             this->loaded_entries.at(this->entry_index)->name = event_.name;
             this->point_info->SetName(event_.name.c_str());
             return;
