@@ -230,11 +230,9 @@ void GuiState::init_point_info() {
             dialog->AddChild(layout);
 
             this->window_ptr->ShowDialog(dialog);
-            break;
+            return;
         }
         case MERGE_CLICKED: {
-            only_update_selected = true;
-
             if (loaded_entries.size() < 2) {
                 this->window_ptr->ShowMessageBox("", "Es m\xC3\xBCssen mindestens zwei Punktewolken geladen sein, damit diese Funktion verf\xC3\xBCgbar ist.");
                 return;
@@ -266,9 +264,8 @@ void GuiState::init_point_info() {
 
                 this->loaded_entries.push_back(entry);
                 this->point_info->entries->AddItem(entry->id.c_str());
-                this->set_scene(false, true);
-
                 this->window_ptr->CloseDialog();
+                this->set_scene(false, true);
                 });
 
             auto cancel = std::make_shared<gui::Button>("Abbrechen");
@@ -289,7 +286,7 @@ void GuiState::init_point_info() {
             dialog->AddChild(layout);
 
             this->window_ptr->ShowDialog(dialog);
-            break;
+            return;
         }
         case READ_MATRIX_CLICKED: {
             only_update_selected = true;
