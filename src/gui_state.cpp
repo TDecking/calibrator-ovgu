@@ -1,7 +1,6 @@
 #include <data.h>
 #include <main_window.h>
 #include <gui_state.h>
-#include <icp.h>
 
 std::shared_ptr<gui::VGrid> CreateHelpDisplay(gui::Window* window) {
     auto& theme = window->GetTheme();
@@ -198,7 +197,12 @@ void GuiState::init_point_info() {
                     i += 1;
                 }
 
-                Eigen::Matrix4d matrix = iterative_closest_point(this->current_entry->get_transformed().points_, this->loaded_entries.at(i)->get_transformed().points_);
+                auto result = open3d::pipelines::registration::RegistrationICP(
+                    this->current_entry->get_transformed(),
+                    this->loaded_entries.at(i)->get_transformed(),
+                    250.0
+                );
+                Eigen::Matrix4d matrix = result.transformation_;
 
                 this->loaded_entries.at(entry_index)->do_transform(matrix);
                 this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
