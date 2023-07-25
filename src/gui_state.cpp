@@ -2,6 +2,8 @@
 #include <main_window.h>
 #include <gui_state.h>
 
+#include <fstream>
+
 std::shared_ptr<gui::VGrid> CreateHelpDisplay(gui::Window* window) {
     auto& theme = window->GetTheme();
 
@@ -287,7 +289,7 @@ void GuiState::init_point_info() {
 
                 if (o_2.size() == 0) {
                     origins.push_back(std::make_pair(
-                        std::string(e_1->name),
+                        std::string(e_2->name),
                         e_2->get_transformation()
                     ));
                 }
@@ -407,16 +409,57 @@ void GuiState::init_point_info() {
 
             std::stringstream stream;
 
+            if (current_entry->get_origins().size() == 0) {
+                stream << current_entry->name << "\n" << matrix << "\n";
+            }
+            else {
+                for (auto& pair : current_entry->get_origins()) {
+                    stream << pair.first << "\n" << (matrix * pair.second) << "\n\n";
+                }
+            }
+
+            std::string formatted = stream.str();
+
             auto text_box = std::make_shared<gui::Label>();
-            text_box->SetText(stream.str().c_str());
+            text_box->SetText(formatted.c_str());
 
             auto ok = std::make_shared<gui::Button>("OK");
             ok->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
 
+            auto save = std::make_shared<gui::Button>("Speichern unter...");
+            save->SetOnClicked([this, formatted]() {
+                this->window_ptr->CloseDialog();
+
+                auto& theme = gui::Application::GetInstance().GetTheme();
+                auto dialog = std::make_shared<gui::FileDialog>(
+                    gui::FileDialog::Mode::SAVE,
+                    "Speichern unter...",
+                    theme
+                );
+
+                dialog->SetOnCancel([this]() {
+                    this->window_ptr->CloseDialog();
+                    });
+                dialog->SetOnDone([this, formatted](const char* file_name) {
+                    std::ofstream write(file_name);
+                    write << formatted;
+                    write.close();
+                    this->window_ptr->CloseDialog();
+                    });
+
+                this->window_ptr->ShowDialog(dialog);
+            });
+
             auto layout = std::make_shared<gui::Vert>(0, gui::Margins(this->window_ptr->GetTheme().font_size));
             layout->AddChild(gui::Horiz::MakeCentered(text_box));
             layout->AddFixed(this->window_ptr->GetTheme().font_size);
-            layout->AddChild(gui::Horiz::MakeCentered(ok));
+
+            auto buttons = std::make_shared<gui::Horiz>();
+            buttons->AddChild(ok);
+            buttons->AddFixed(this->window_ptr->GetTheme().font_size);
+            buttons->AddChild(save);
+
+            layout->AddChild(buttons);
 
             auto dialog = std::make_shared<gui::Dialog>("Matrix");
             dialog->AddChild(layout);
