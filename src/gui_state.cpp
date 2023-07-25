@@ -253,14 +253,52 @@ void GuiState::init_point_info() {
                     i += 1;
                 }
 
+                auto& e_1 = this->loaded_entries.at(entry_index);
+                auto& e_2 = this->loaded_entries.at(i);
+
                 // Do not use current_entry, since it is recolored.
-                auto& cloud_1 = this->loaded_entries.at(entry_index)->get_transformed();
-                auto& cloud_2 = this->loaded_entries.at(i)->get_transformed();
+                auto& cloud_1 = e_1->get_transformed();
+                auto& cloud_2 = e_2->get_transformed();
 
                 open3d::geometry::PointCloud cloud = open3d::geometry::PointCloud(cloud_1);
                 cloud += cloud_2;
 
                 std::shared_ptr<Entry> entry = std::make_shared<Entry>(cloud);
+
+                auto& origins = entry->get_origins();
+
+                auto& o_1 = e_1->get_origins();
+                auto& o_2 = e_2->get_origins();
+
+                if (o_1.size() == 0) {
+                    origins.push_back(std::make_pair(
+                        std::string(e_1->name),
+                        e_1->get_transformation()
+                    ));
+                }
+                else {
+                    for (auto& pair : o_1) {
+                        origins.push_back(std::make_pair(
+                            std::string(pair.first),
+                            e_1->get_transformation() * pair.second
+                        ));
+                    }
+                }
+
+                if (o_2.size() == 0) {
+                    origins.push_back(std::make_pair(
+                        std::string(e_1->name),
+                        e_2->get_transformation()
+                    ));
+                }
+                else {
+                    for (auto& pair : o_2) {
+                        origins.push_back(std::make_pair(
+                            std::string(pair.first),
+                            e_2->get_transformation() * pair.second
+                        ));
+                    }
+                }
 
                 this->loaded_entries.push_back(entry);
                 this->point_info->entries->AddItem(entry->id.c_str());
@@ -368,7 +406,6 @@ void GuiState::init_point_info() {
             auto matrix = current_entry->get_transformation();
 
             std::stringstream stream;
-            stream << matrix;
 
             auto text_box = std::make_shared<gui::Label>();
             text_box->SetText(stream.str().c_str());
@@ -527,7 +564,7 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
         gui::Application::GetInstance().PostToMainThread(
             window, [this, window, entry, path]() {
                 this->loaded_entries.push_back(entry);
-                this->point_info->entries->AddItem(path.c_str());
+                this->point_info->entries->AddItem(entry->name.c_str());
                 if (this->entry_index < 0) {
                     this->current_entry = std::make_shared<Entry>(*entry);
                     this->colorize_current_entry();

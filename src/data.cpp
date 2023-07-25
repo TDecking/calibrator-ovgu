@@ -58,7 +58,8 @@ Entry::Entry(const Entry& arg):
     base(arg.base),
     transformed(arg.transformed),
     transformations(arg.transformations),
-    name(arg.name)
+    name(arg.name),
+    origins(arg.origins)
 {}
 
 
@@ -105,10 +106,15 @@ Entry::Entry(const std::string path, std::function<void(double)> UpdateProgress)
     base(load(path, UpdateProgress)),
     transformed(base),
     transformations(),
-    name(path) {
+    name(id) {
 }
 
-Entry::Entry(const open3d::geometry::PointCloud& cloud): id("cloud_" + std::to_string(id_counter++)), base(cloud), transformed(cloud), transformations(), name(id) {
+Entry::Entry(const open3d::geometry::PointCloud& cloud):
+    id("cloud_" + std::to_string(id_counter++)),
+    base(cloud), transformed(cloud),
+    transformations(),
+    name(id),
+    origins() {
 }
 
 void Entry::do_transform(Eigen::Matrix4d transformation) {
@@ -129,4 +135,8 @@ std::optional<Eigen::Matrix4d> Entry::undo_transform() {
 
 open3d::geometry::PointCloud& Entry::get_transformed() {
     return transformed;
+}
+
+std::vector<std::pair<std::string, Eigen::Matrix4d>>& Entry::get_origins() {
+    return origins;
 }

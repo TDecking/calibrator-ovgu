@@ -25,6 +25,13 @@ class Entry {
     /// </summary>
     std::vector<Eigen::Matrix4d> transformations;
 
+    /// <summary>
+    /// A list of names for entries that were used to construct this instance.
+    /// Associated with them are transformations which turn the referenced entries
+    /// base data into the current entries base data.
+    /// </summary>
+    std::vector<std::pair<std::string, Eigen::Matrix4d>> origins;
+
 public:
     /// <summary>
     /// Used to disambiguate entries for rendering.
@@ -85,6 +92,12 @@ public:
     /// </summary>
     /// <returns></returns>
     Eigen::Matrix4d get_transformation();
+
+    /// <summary>
+    /// Get a list of names for entries that were used to construct this instance.
+    /// </summary>
+    /// <returns></returns>
+    std::vector<std::pair<std::string, Eigen::Matrix4d>>& get_origins();
 
 private:
     /// <summary>
