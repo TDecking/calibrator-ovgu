@@ -21,43 +21,23 @@ std::shared_ptr<gui::VGrid> CreateHelpDisplay(gui::Window* window) {
         AddLabel(right);
     };
 
-    AddRow("Arcball mode", " ");
-    AddRow("Left-drag", "Rotate camera");
-    AddRow("Shift + left-drag", "Forward/backward");
-    AddLabel("Ctrl + left-drag");
-    AddLabel("Pan camera");
-    AddLabel("Win + left-drag (up/down)  ");
-    AddLabel("Rotate around forward axis");
+    AddRow("linke Maustaste + ziehen", "Rotation der Kamera");
+    AddRow("Shift + linke Maustaste + ziehen", "Vorw\xC3\xA4rts/R\xC3\xBC""ckw\xC3\xA4rts"); // Vorwärts/Rückwärts
+    AddRow("Strg + linke Maustaste + ziehen", "Kamera schwenken");
+    AddLabel("Win + linke Maustaste + ziehen (Oben/unten)");
+    AddLabel("Rotation an vorderer Axe");
 
     // GNOME3 uses Win/Meta as a shortcut to move windows around, so we
     // need another way to rotate around the forward axis.
-    AddLabel("Ctrl + Shift + left-drag");
-    AddLabel("Rotate around forward axis");
-    AddLabel("Alt + left-drag");
-    AddLabel("Rotate directional light");
+    AddLabel("Strg + Shift + linke Maustaste + ziehen");
+    AddLabel("Rotation an vorderer Axe");
+    //AddLabel("Alt + linke Maustaste + ziehen");
+    //AddLabel("Rotate directional light");
 
-    AddRow("Right-drag", "Pan camera");
-    AddRow("Middle-drag", "Rotate directional light");
-    AddRow("Wheel", "Forward/backward");
-    AddRow("Shift + Wheel", "Change field of view");
-    AddRow("", "");
-
-    AddRow("Fly mode", " ");
-    AddRow("Left-drag", "Rotate camera");
-    AddLabel("Win + left-drag");
-    AddLabel("Rotate around forward axis");
-    AddRow("W", "Forward");
-    AddRow("S", "Backward");
-    AddRow("A", "Step left");
-    AddRow("D", "Step right");
-    AddRow("Q", "Step up");
-    AddRow("Z", "Step down");
-    AddRow("E", "Roll left");
-    AddRow("R", "Roll right");
-    AddRow("Up", "Look up");
-    AddRow("Down", "Look down");
-    AddRow("Left", "Look left");
-    AddRow("Right", "Look right");
+    AddRow("rechte Maustaste + ziehen", "Kamera schwenken");
+    //AddRow("Middle-drag", "Rotate directional light");
+    AddRow("Mausrad", "Vorw\xC3\xA4rts/R\xC3\xBC""ckw\xC3\xA4rts"); // Vorwärts/Rückwärts
+    AddRow("Shift + Mausrad", "Sichtfeld");
 
     return layout;
 }
@@ -80,9 +60,9 @@ std::shared_ptr<gui::VGrid> CreateCameraDisplay(gui::Window* window) {
     };
 
     AddRow("Position:", "[0 0 0]");
-    AddRow("Forward:", "[0 0 0]");
-    AddRow("Left:", "[0 0 0]");
-    AddRow("Up:", "[0 0 0]");
+    AddRow("Vorw\xC3\xA4rts:", "[0 0 0]"); // Vorwärts
+    AddRow("Links:", "[0 0 0]");
+    AddRow("Oben:", "[0 0 0]");
 
     return layout;
 }
@@ -90,22 +70,22 @@ std::shared_ptr<gui::VGrid> CreateCameraDisplay(gui::Window* window) {
 void GuiState::init_menu() {
     auto menu = std::make_shared<gui::Menu>();
     auto file_menu = std::make_shared<gui::Menu>();
-    file_menu->AddItem("Open...", FILE_OPEN, gui::KEY_O);
-    file_menu->AddItem("Export Current Image...", FILE_EXPORT_RGB);
-    file_menu->AddItem("Undo", UNDO_TRANSFORMATION);
+    file_menu->AddItem("\xC3\x96""ffnen...", FILE_OPEN, gui::KEY_O); // Öffnen
+    file_menu->AddItem("Bild exportieren...", FILE_EXPORT_RGB);
+    file_menu->AddItem("R\xC3\xBC""ckg\xC3\xA4ngig", UNDO_TRANSFORMATION); // Rückgängig
     file_menu->AddSeparator();
 #if defined(WIN32)
-    file_menu->AddItem("Exit", FILE_QUIT);
+    file_menu->AddItem("Beenden", FILE_QUIT);
 #endif
-    menu->AddMenu("File", file_menu);
+    menu->AddMenu("Datei", file_menu);
 
     auto help_menu = std::make_shared<gui::Menu>();
-    help_menu->AddItem("Show Controls", HELP_KEYS);
-    help_menu->AddItem("Show Camera Info", HELP_CAMERA);
+    help_menu->AddItem("Bedienung anzeigen", HELP_KEYS);
+    help_menu->AddItem("Kamerainfo anzeigen", HELP_CAMERA);
     help_menu->AddSeparator();
-    help_menu->AddItem("About", HELP_ABOUT);
-    help_menu->AddItem("Contact", HELP_CONTACT);
-    menu->AddMenu("Help", help_menu);
+    help_menu->AddItem("\xC3\x9C""ber", HELP_ABOUT); // Über
+    help_menu->AddItem("Kontakt", HELP_CONTACT);
+    menu->AddMenu("Hilfe", help_menu);
     app_menu = menu;
 }
 

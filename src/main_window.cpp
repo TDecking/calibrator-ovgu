@@ -12,19 +12,13 @@ using namespace open3d::visualization;
 std::shared_ptr<gui::Dialog> CreateContactDialog(gui::Window* window) {
     auto& theme = window->GetTheme();
     auto em = theme.font_size;
-    auto dlg = std::make_shared<gui::Dialog>("Contact Us");
+    auto dlg = std::make_shared<gui::Dialog>("Kontakt");
 
     auto title = std::make_shared<gui::Label>("Contact Us");
     auto left_col = std::make_shared<gui::Label>(
-        "Web site:\n"
-        "Code:\n"
-        "Mailing list:\n"
-        "Discord channel:");
+        "Repository:");
     auto right_col = std::make_shared<gui::Label>(
-        "http://www.open3d.org\n"
-        "http://github.org/isl-org/Open3D\n"
-        "http://www.open3d.org/index.php/subscribe/\n"
-        "https://discord.gg/D35BGvn");
+        "http://www.github.com/TDecking/calibrator-ovgu");
     auto ok = std::make_shared<gui::Button>("OK");
     ok->SetOnClicked([window]() { window->CloseDialog(); });
 
@@ -47,13 +41,13 @@ std::shared_ptr<gui::Dialog> CreateContactDialog(gui::Window* window) {
 
 std::shared_ptr<gui::Dialog> CreateAboutDialog(gui::Window* window) {
     auto& theme = window->GetTheme();
-    auto dlg = std::make_shared<gui::Dialog>("About");
+    auto dlg = std::make_shared<gui::Dialog>("\xC3\x9C""ber"); // Über
 
     auto title = std::make_shared<gui::Label>(
-        (std::string("Open3D ") + OPEN3D_VERSION).c_str());
+        (std::string("Calibrator") + OPEN3D_VERSION).c_str());
     auto text = std::make_shared<gui::Label>(
         "The MIT License (MIT)\n"
-        "Copyright (c) 2018-2023 www.open3d.org\n\n"
+        "Copyright (c) 2023 Tobias Decking, Hannah Spinde\n\n"
 
         "Permission is hereby granted, free of charge, to any person "
         "obtaining a copy of this software and associated documentation "
@@ -166,11 +160,12 @@ void MainWindow::LoadCloud(const std::string& path) {
     auto progressbar = std::make_shared<gui::ProgressBar>();
     gui::Application::GetInstance().PostToMainThread(this, [this, path,
         progressbar]() {
+            const char* laoding = "L\xC3\xA4""dt"; // Lädt
             auto& theme = GetTheme();
-            auto loading_dlg = std::make_shared<gui::Dialog>("Loading");
+            auto loading_dlg = std::make_shared<gui::Dialog>(laoding);
             auto vert =
                 std::make_shared<gui::Vert>(0, gui::Margins(theme.font_size));
-            auto loading_text = std::string("Loading ") + path;
+            auto loading_text = std::string(laoding) + " " + path;
             vert->AddChild(std::make_shared<gui::Label>(loading_text.c_str()));
             vert->AddFixed(theme.font_size);
             vert->AddChild(progressbar);
@@ -194,8 +189,8 @@ void MainWindow::ExportCurrentImage(const std::string& path) {
         [this, path](std::shared_ptr<open3d::geometry::Image> image) mutable {
             if (!open3d::io::WriteImage(path, *image)) {
                 this->ShowMessageBox(
-                    "Error", (std::string("Could not write image to ") +
-                        path + ".")
+                    "Fehler", (std::string("Bild konnte nicht nach") +
+                        path + " geschrieben werden")
                     .c_str());
             }
             gui_state->scene_wgt->EnableSceneCaching(true);
@@ -227,7 +222,7 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
             "ASCII point cloud files with colors (.xyzrgb)");
         dlg->AddFilter(".pcd", "Point Cloud Data files (.pcd)");
         dlg->AddFilter(".pts", "3D Points files (.pts)");
-        dlg->AddFilter("", "All files");
+        dlg->AddFilter("", "Alle Dateien");
         dlg->SetOnCancel([this]() { this->CloseDialog(); });
         dlg->SetOnDone([this](const char* path) {
             this->CloseDialog();
@@ -238,9 +233,9 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
     }
     case FILE_EXPORT_RGB: {
         auto dlg = std::make_shared<gui::FileDialog>(
-            gui::FileDialog::Mode::SAVE, "Save File", GetTheme());
-        dlg->AddFilter(".png", "PNG images (.png)");
-        dlg->AddFilter("", "All files");
+            gui::FileDialog::Mode::SAVE, "Datei speichern", GetTheme());
+        dlg->AddFilter(".png", "PNG-Bilder (.png)");
+        dlg->AddFilter("", "Alle Dateien");
         dlg->SetOnCancel([this]() { this->CloseDialog(); });
         dlg->SetOnDone([this](const char* path) {
             this->CloseDialog();
