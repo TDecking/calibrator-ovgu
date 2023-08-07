@@ -283,7 +283,7 @@ void GuiState::init_point_info() {
                 }
 
                 this->loaded_entries.push_back(entry);
-                this->point_info->entries->AddItem(entry->id.c_str());
+                this->point_info->entries->AddItem(entry->name.c_str());
                 this->window_ptr->CloseDialog();
                 this->set_scene(false, true);
                 });
