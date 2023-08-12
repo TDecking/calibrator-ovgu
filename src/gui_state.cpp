@@ -314,22 +314,23 @@ void GuiState::init_point_info() {
             auto grid = std::make_shared<gui::VGrid>(4, 0, gui::Margins(this->window_ptr->GetTheme().font_size));
             auto label = std::make_shared<gui::Label>("Determinante: 1.0");
 
-            std::vector<std::shared_ptr<gui::NumberEdit>> editors;
+            std::shared_ptr<std::vector<std::shared_ptr<gui::NumberEdit>>> editors
+                = std::make_shared<std::vector<std::shared_ptr<gui::NumberEdit>>>();
 
             for (int i = 0; i < 12; i++) {
-                editors.push_back(std::move(std::make_shared<gui::NumberEdit>(gui::NumberEdit::Type::DOUBLE)));
-                auto& edit = editors.at(i);
+                editors->push_back(std::move(std::make_shared<gui::NumberEdit>(gui::NumberEdit::Type::DOUBLE)));
+                auto& edit = editors->at(i);
 
                 if (i == 0 || i == 5 || i == 10) {
                     edit->SetValue(1.0);
                 }
 
                 edit->SetDecimalPrecision(8);
-                edit->SetOnValueChanged([&editors, label](double) {
+                edit->SetOnValueChanged([label, editors](double) {
                     Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
 
                     for (int i = 0; i < 12; i++) {
-                        m(i) = editors[i]->GetDoubleValue();
+                        m(i) = editors->at(i)->GetDoubleValue();
                     }
 
                     m(3, 3) = 1.0;
@@ -350,16 +351,20 @@ void GuiState::init_point_info() {
             cancel->SetOnClicked([this]() { this->window_ptr->CloseDialog(); });
 
             auto ok = std::make_shared<gui::Button>("OK");
-            ok->SetOnClicked([this, &editors]() {
+            ok->SetOnClicked([this, editors]() {
                 Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
 
                 for (int i = 0; i < 12; i++) {
-                    m(i) = editors[i]->GetDoubleValue();
+                    m(i) = editors->at(i)->GetDoubleValue();
                 }
 
                 m(3, 3) = 1.0;
 
-                this->current_entry->do_transform(m);
+                this->loaded_entries.at(entry_index)->do_transform(m);
+                this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
+                this->colorize_current_entry();
+                this->set_scene(true, true);
+
                 this->window_ptr->CloseDialog();
                 });
 
