@@ -298,6 +298,7 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         break;
     }
     case UNDO_TRANSFORMATION: {
+        this->gui_state->loaded_entries.at(this->gui_state->entry_index)->undo_transform();
         this->gui_state->current_entry->undo_transform();
         this->gui_state->set_scene(true, true);
         break;
