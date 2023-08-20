@@ -66,8 +66,10 @@ struct GuiState {
 
     GuiSettingsModel model; // Contains default values
 
+    /// <summary>
+    /// Material used to present point clouds.
+    /// </summary>
     rendering::MaterialRecord standard_material;
-    rendering::MaterialRecord highlight_material;
 
     MainWindow* window_ptr;
 

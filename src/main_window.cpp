@@ -14,7 +14,7 @@ std::shared_ptr<gui::Dialog> CreateContactDialog(gui::Window* window) {
     auto em = theme.font_size;
     auto dlg = std::make_shared<gui::Dialog>("Kontakt");
 
-    auto title = std::make_shared<gui::Label>("Contact Us");
+    auto title = std::make_shared<gui::Label>("Kontakt");
     auto left_col = std::make_shared<gui::Label>(
         "Repository:");
     auto right_col = std::make_shared<gui::Label>(
@@ -110,11 +110,6 @@ bool PointCloudHasUniformColor(const open3d::geometry::PointCloud& pcd) {
 };
 
 
-const std::string MODEL_NAME = "__model__";
-const std::string INSPECT_MODEL_NAME = "__inspect_model__";
-const std::string WIREFRAME_NAME = "__wireframe_model__";
-
-
 MainWindow::MainWindow(const std::string& title, int width, int height)
     : gui::Window(title, width, height)
 {
@@ -202,26 +197,10 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
     switch (menu_id) {
     case FILE_OPEN: {
         auto dlg = std::make_shared<gui::FileDialog>(
-            gui::FileDialog::Mode::OPEN, "Open Geometry", GetTheme());
-        dlg->AddFilter(".ply .stl .fbx .obj .off .gltf .glb",
-            "Triangle mesh files (.ply, .stl, .fbx, .obj, .off, "
-            ".gltf, .glb)");
+            gui::FileDialog::Mode::OPEN, "Datei Laden", GetTheme());
         dlg->AddFilter(".xyz .xyzn .xyzrgb .ply .pcd .pts",
-            "Point cloud files (.xyz, .xyzn, .xyzrgb, .ply, "
+            "Punktewlolke-Dateien (.xyz, .xyzn, .xyzrgb, .ply, "
             ".pcd, .pts)");
-        dlg->AddFilter(".ply", "Polygon files (.ply)");
-        dlg->AddFilter(".stl", "Stereolithography files (.stl)");
-        dlg->AddFilter(".fbx", "Autodesk Filmbox files (.fbx)");
-        dlg->AddFilter(".obj", "Wavefront OBJ files (.obj)");
-        dlg->AddFilter(".off", "Object file format (.off)");
-        dlg->AddFilter(".gltf", "OpenGL transfer files (.gltf)");
-        dlg->AddFilter(".glb", "OpenGL binary transfer files (.glb)");
-        dlg->AddFilter(".xyz", "ASCII point cloud files (.xyz)");
-        dlg->AddFilter(".xyzn", "ASCII point cloud with normals (.xyzn)");
-        dlg->AddFilter(".xyzrgb",
-            "ASCII point cloud files with colors (.xyzrgb)");
-        dlg->AddFilter(".pcd", "Point Cloud Data files (.pcd)");
-        dlg->AddFilter(".pts", "3D Points files (.pts)");
         dlg->AddFilter("", "Alle Dateien");
         dlg->SetOnCancel([this]() { this->CloseDialog(); });
         dlg->SetOnDone([this](const char* path) {
@@ -298,9 +277,11 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         break;
     }
     case UNDO_TRANSFORMATION: {
-        this->gui_state->loaded_entries.at(this->gui_state->entry_index)->undo_transform();
-        this->gui_state->current_entry->undo_transform();
-        this->gui_state->set_scene(true, true);
+        if (this->gui_state->loaded_entries.size() > 0) {
+            this->gui_state->loaded_entries.at(this->gui_state->entry_index)->undo_transform();
+            this->gui_state->current_entry->undo_transform();
+            this->gui_state->set_scene(true, true);
+        }
         break;
     }
     }

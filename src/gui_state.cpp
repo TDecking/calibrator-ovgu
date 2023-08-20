@@ -72,12 +72,15 @@ void GuiState::init_menu() {
     auto file_menu = std::make_shared<gui::Menu>();
     file_menu->AddItem("\xC3\x96""ffnen...", FILE_OPEN, gui::KEY_O); // Öffnen
     file_menu->AddItem("Bild exportieren...", FILE_EXPORT_RGB);
-    file_menu->AddItem("R\xC3\xBC""ckg\xC3\xA4ngig", UNDO_TRANSFORMATION); // Rückgängig
     file_menu->AddSeparator();
 #if defined(WIN32)
     file_menu->AddItem("Beenden", FILE_QUIT);
 #endif
     menu->AddMenu("Datei", file_menu);
+
+    auto edit_menu = std::make_shared<gui::Menu>();
+    edit_menu->AddItem("R\xC3\xBC""ckg\xC3\xA4ngig", UNDO_TRANSFORMATION); // Rückgängig
+    menu->AddMenu("Bearbeiten", edit_menu);
 
     auto help_menu = std::make_shared<gui::Menu>();
     help_menu->AddItem("Bedienung anzeigen", HELP_KEYS);
@@ -536,21 +539,9 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
 }
 
 void GuiState::init_materials() {
-    highlight_material.shader = "defaultLit";
     standard_material.shader = "defaultUnlit";
 
     auto& materials = model.GetCurrentMaterials();
-
-    highlight_material.base_color.x() = materials.lit.base_color.x();
-    highlight_material.base_color.y() = materials.lit.base_color.y();
-    highlight_material.base_color.z() = materials.lit.base_color.z();
-    highlight_material.point_size = materials.point_size;
-    highlight_material.base_metallic = materials.lit.metallic;
-    highlight_material.base_roughness = materials.lit.roughness;
-    highlight_material.base_reflectance = materials.lit.reflectance;
-    highlight_material.base_clearcoat = materials.lit.clear_coat;
-    highlight_material.base_clearcoat_roughness = materials.lit.clear_coat_roughness;
-    highlight_material.base_anisotropy = materials.lit.anisotropy;
 
     standard_material.base_color.x() = materials.unlit.base_color.x();
     standard_material.base_color.y() = materials.unlit.base_color.y();
@@ -593,13 +584,13 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
             window, [this, window, entry, path]() {
                 this->loaded_entries.push_back(entry);
                 this->point_info->entries->AddItem(entry->name.c_str());
-                if (this->entry_index < 0) {
-                    this->current_entry = std::make_shared<Entry>(*entry);
-                    this->colorize_current_entry();
-                    this->entry_index = 0;
-                    this->point_info->entries->SetSelectedIndex(0);
-                    this->point_info->SetName(this->current_entry->name.c_str());
-                }
+                
+                this->current_entry = std::make_shared<Entry>(*entry);
+                this->colorize_current_entry();
+                this->entry_index = this->loaded_entries.size() - 1;
+                this->point_info->entries->SetSelectedIndex(this->entry_index);
+                this->point_info->SetName(this->current_entry->name.c_str());
+
                 this->set_scene(false, false);
                 window->CloseDialog();
             });
@@ -607,7 +598,7 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
     else {
         gui::Application::GetInstance().PostToMainThread(window, [this, window, path]() {
                 window->CloseDialog();
-                auto msg = std::string("Could not load '") + path + "'.";
+                auto msg = std::string("Konnte '") + path + "' nicht laden.";
                 window->ShowMessageBox("Error", msg.c_str());
             });
     }
@@ -621,7 +612,7 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
         scene3d->ShowAxes(true);
         scene3d->RemoveGeometry(current_entry->id);
         const open3d::geometry::PointCloud& cloud = current_entry->get_transformed();
-        scene3d->AddGeometry(current_entry->id, &cloud, highlight_material);
+        scene3d->AddGeometry(current_entry->id, &cloud, standard_material);
     }
     else {
         scene3d->ClearGeometry();
@@ -639,13 +630,7 @@ void GuiState::set_scene(bool only_update_selected, bool keep_camera) {
             }
 
             const open3d::geometry::PointCloud& cloud = entry->get_transformed();
-
-            if (i != entry_index) {
-                scene3d->AddGeometry(entry->id, &cloud, standard_material);
-            }
-            else {
-                scene3d->AddGeometry(entry->id, &cloud, highlight_material);
-            }
+            scene3d->AddGeometry(entry->id, &cloud, standard_material);
         }
 
         scene3d->ShowAxes(true);
