@@ -107,7 +107,7 @@ void GuiState::init_scene() {
     render_scene->SetSunLightDirection(scene_wgt->GetScene()->GetCamera()->GetForwardVector());
 }
 
-void GuiState::init_point_info() {
+void GuiState::init_manipulator() {
     auto& app = gui::Application::GetInstance();
     auto& theme = window_ptr->GetTheme();
 
@@ -116,9 +116,9 @@ void GuiState::init_point_info() {
     const int grid_spacing = int(std::ceil(0.25 * em));
     const gui::Margins base_margins(int(std::round(0.5 * lm)), lm, lm, lm);
 
-    this->point_info = std::make_shared<PointInfo>(0, base_margins);
+    this->manipulator = std::make_shared<Manipulator>(0, base_margins);
 
-    this->point_info->SetEventHandler([this](PointInfoEvent& event_) {
+    this->manipulator->SetEventHandler([this](ManipulatorEvent& event_) {
         bool only_update_selected = false;
 
         switch (event_.type) {
@@ -129,14 +129,14 @@ void GuiState::init_point_info() {
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(index));
             this->colorize_current_entry();
             this->entry_index = index;
-            this->point_info->SetName(this->current_entry->name.c_str());
+            this->manipulator->SetName(this->current_entry->name.c_str());
             break;
         }
         case REMOVE_CLICKED: {
             int index = this->entry_index;
 
             const char* name = this->loaded_entries.at(index)->name.c_str();
-            this->point_info->entries->RemoveItem(name);
+            this->manipulator->entries->RemoveItem(name);
             this->loaded_entries.erase(this->loaded_entries.begin() + index);
 
             index -= 1;
@@ -150,8 +150,8 @@ void GuiState::init_point_info() {
                 this->colorize_current_entry();
                 this->entry_index = index;
 
-                this->point_info->entries->SetSelectedIndex(index);
-                this->point_info->SetName(this->current_entry->name.c_str());
+                this->manipulator->entries->SetSelectedIndex(index);
+                this->manipulator->SetName(this->current_entry->name.c_str());
             }
             else {
                 this->loaded_entries = {};
@@ -159,7 +159,7 @@ void GuiState::init_point_info() {
                 this->entry_index = -1;
             }
 
-            this->point_info->ResetSliders();
+            this->manipulator->ResetSliders();
             break;
         }
         case ICP_CLICKED: {
@@ -287,7 +287,7 @@ void GuiState::init_point_info() {
                 }
 
                 this->loaded_entries.push_back(entry);
-                this->point_info->entries->AddItem(entry->name.c_str());
+                this->manipulator->entries->AddItem(entry->name.c_str());
                 this->window_ptr->CloseDialog();
                 this->set_scene(false, true);
                 });
@@ -473,7 +473,7 @@ void GuiState::init_point_info() {
             this->loaded_entries.at(entry_index)->do_transform(t);
             this->current_entry = std::make_shared<Entry>(*this->loaded_entries.at(this->entry_index));
             this->colorize_current_entry();
-            this->point_info->ResetSliders();
+            this->manipulator->ResetSliders();
             only_update_selected = true;
             break;
         }
@@ -493,7 +493,7 @@ void GuiState::init_point_info() {
 
             this->current_entry->name = name;
             this->loaded_entries.at(this->entry_index)->name = event_.name;
-            this->point_info->SetName(event_.name.c_str());
+            this->manipulator->SetName(event_.name.c_str());
             return;
         }
         }
@@ -516,8 +516,8 @@ GuiState::GuiState(MainWindow* window) : window_ptr(window) {
 
     init_materials();
 
-    init_point_info();
-    window_ptr->AddChild(point_info);
+    init_manipulator();
+    window_ptr->AddChild(manipulator);
 
     // Apply model settings (which should be defaults) to the rendering entities
     auto scene = scene_wgt->GetScene();
@@ -589,13 +589,13 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
                 }
 
                 this->loaded_entries.push_back(entry);
-                this->point_info->entries->AddItem(entry->name.c_str());
+                this->manipulator->entries->AddItem(entry->name.c_str());
 
                 this->current_entry = std::make_shared<Entry>(*entry);
                 this->colorize_current_entry();
                 this->entry_index = this->loaded_entries.size() - 1;
-                this->point_info->entries->SetSelectedIndex(this->entry_index);
-                this->point_info->SetName(this->current_entry->name.c_str());
+                this->manipulator->entries->SetSelectedIndex(this->entry_index);
+                this->manipulator->SetName(this->current_entry->name.c_str());
 
                 this->set_scene(false, false);
                 window->CloseDialog();

@@ -174,11 +174,11 @@ void MainWindow::Layout(const gui::LayoutContext& context) {
 
     // Draw point info in the upper left
     static int MIN_WIDTH = 0;
-    const auto prefpi = gui_state->point_info->CalcPreferredSize(
+    const auto prefpi = gui_state->manipulator->CalcPreferredSize(
         context, gui::Widget::Constraints());
     MIN_WIDTH = MIN_WIDTH == 0 ? prefpi.width : MIN_WIDTH;
-    gui_state->point_info->SetFrame(gui::Rect(0, r.y, MIN_WIDTH, prefpi.height));
-    gui_state->point_info->Layout(context);
+    gui_state->manipulator->SetFrame(gui::Rect(0, r.y, MIN_WIDTH, prefpi.height));
+    gui_state->manipulator->Layout(context);
 
     Super::Layout(context);
 }

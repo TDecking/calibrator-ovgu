@@ -10,7 +10,7 @@
 #include <open3d/visualization/gui/NumberEdit.h>
 
 #include "utils.h"
-#include "pointinfo_widget.h"
+#include "manipulator_widget.h"
 
 class MainWindow;
 
@@ -51,7 +51,7 @@ struct GuiState {
     /// <summary>
     /// This widget contains the tools to manipulate point clouds.
     /// </summary>
-    std::shared_ptr<PointInfo> point_info;
+    std::shared_ptr<Manipulator> manipulator;
 
     /// <summary>
     /// This widget is used to render the clouds.
@@ -78,7 +78,7 @@ public:
 
     void init_menu();
     void init_scene();
-    void init_point_info();
+    void init_manipulator();
     void init_materials();
     void init_lighting(const GuiSettingsModel::LightingProfile& lighting);
     void colorize_current_entry();

@@ -32,7 +32,7 @@ target_sources(calibrator PRIVATE
     src/main_window.cpp
     src/data.cpp
     src/gui_state.cpp
-    src/pointinfo_widget.cpp
+    src/manipulator_widget.cpp
     src/utils.cpp
 )
 

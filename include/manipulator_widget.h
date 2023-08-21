@@ -9,7 +9,7 @@
 using namespace open3d::visualization;
 
 
-class PointInfo;
+class Manipulator;
 
 class MouseEventSlider : public gui::Slider {
 public:
@@ -21,7 +21,7 @@ private:
     std::function<void(const gui::MouseEvent& handler)> handler;
 };
 
-enum PointInfoEventType {
+enum ManipulatorEventType {
     REMOVE_CLICKED,
     ICP_CLICKED,
     MERGE_CLICKED,
@@ -33,9 +33,9 @@ enum PointInfoEventType {
     SLIDER_VALUE_CHANGED
 };
 
-struct PointInfoEvent {
+struct ManipulatorEvent {
 public:
-    PointInfoEventType type;
+    ManipulatorEventType type;
     int entry_index;
 
     double x_translation;
@@ -47,16 +47,16 @@ public:
 
     std::string name;
 
-    PointInfoEvent(PointInfo* point_info);
+    ManipulatorEvent(Manipulator* manipulator);
 };
 
 
-class PointInfo : public gui::Vert {
-    friend PointInfoEvent;
+class Manipulator : public gui::Vert {
+    friend ManipulatorEvent;
 public:
-    PointInfo(int spacing, const gui::Margins& margins = gui::Margins());
+    Manipulator(int spacing, const gui::Margins& margins = gui::Margins());
 
-    void SetEventHandler(std::function<void(PointInfoEvent&)> handler);
+    void SetEventHandler(std::function<void(ManipulatorEvent&)> handler);
     /// <summary>
     /// Overwrites the displayed text for the currently selected point cloud.
     /// </summary>
@@ -80,7 +80,7 @@ private:
     std::shared_ptr<gui::Button> read_matrix;
     std::shared_ptr<gui::Button> show_matrix;
 
-    std::function<void(PointInfoEvent&)> handler;
+    std::function<void(ManipulatorEvent&)> handler;
 
-    std::function<void(void)> make_button_handler(PointInfoEventType type);
+    std::function<void(void)> make_button_handler(ManipulatorEventType type);
 };

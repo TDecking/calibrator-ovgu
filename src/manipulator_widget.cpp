@@ -1,4 +1,4 @@
-#include <pointinfo_widget.h>
+#include <manipulator_widget.h>
 
 MouseEventSlider::MouseEventSlider(gui::Slider::Type type) : gui::Slider(type) {
     handler = [](const gui::MouseEvent& _e) {};
@@ -14,22 +14,22 @@ void MouseEventSlider::SetOnMouseEvent(std::function<void(const gui::MouseEvent&
     this->handler = handler;
 }
 
-PointInfoEvent::PointInfoEvent(PointInfo* point_info) {
-    type = PointInfoEventType::REMOVE_CLICKED;
-    entry_index = point_info->entries->GetSelectedIndex();
+ManipulatorEvent::ManipulatorEvent(Manipulator* manipulator) {
+    type = ManipulatorEventType::REMOVE_CLICKED;
+    entry_index = manipulator->entries->GetSelectedIndex();
 
-    x_translation = point_info->x_translation->GetDoubleValue();
-    y_translation = point_info->y_translation->GetDoubleValue();
-    z_translation = point_info->z_translation->GetDoubleValue();
-    x_rotation = point_info->x_rotation->GetDoubleValue();
-    y_rotation = point_info->y_rotation->GetDoubleValue();
-    z_rotation = point_info->z_rotation->GetDoubleValue();
+    x_translation = manipulator->x_translation->GetDoubleValue();
+    y_translation = manipulator->y_translation->GetDoubleValue();
+    z_translation = manipulator->z_translation->GetDoubleValue();
+    x_rotation = manipulator->x_rotation->GetDoubleValue();
+    y_rotation = manipulator->y_rotation->GetDoubleValue();
+    z_rotation = manipulator->z_rotation->GetDoubleValue();
 
-    name = std::string(point_info->name_edit->GetText());
+    name = std::string(manipulator->name_edit->GetText());
 }
 
 
-PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spacing, margins) {
+Manipulator::Manipulator(int spacing, const gui::Margins& margins) : gui::Vert(spacing, margins) {
     auto& app = gui::Application::GetInstance();
     auto& theme = app.GetTheme();
     const float em = (float) theme.font_size;
@@ -38,7 +38,7 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
     const int separation_height = int(std::ceil(0.75 * em));
     gui::Margins indent(em, 0, 0, 0);
 
-    handler = [](PointInfoEvent& _) {};
+    handler = [](ManipulatorEvent& _) {};
 
     entries = std::make_shared<gui::Combobox>();
     remove = std::make_shared<gui::Button>("L\xC3\xB6schen"); // "Löschen"
@@ -157,33 +157,33 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
 
     // Handle Events
 
-    remove->SetOnClicked(make_button_handler(PointInfoEventType::REMOVE_CLICKED));
+    remove->SetOnClicked(make_button_handler(ManipulatorEventType::REMOVE_CLICKED));
 
     name_edit->SetOnValueChanged([this](const char* text) {
         if (this->entries->GetNumberOfItems() == 0) return;
-        PointInfoEvent event_(this);
+        ManipulatorEvent event_(this);
         event_.name = std::string(text);
-        event_.type = PointInfoEventType::NAME_CHANGED;
+        event_.type = ManipulatorEventType::NAME_CHANGED;
         this->handler(event_);
         });
 
-    icp->SetOnClicked(make_button_handler(PointInfoEventType::ICP_CLICKED));
-    merge->SetOnClicked(make_button_handler(PointInfoEventType::MERGE_CLICKED));
-    read_matrix->SetOnClicked(make_button_handler(PointInfoEventType::READ_MATRIX_CLICKED));
-    show_matrix->SetOnClicked(make_button_handler(PointInfoEventType::SHOW_MATRIX_CLICKED));
+    icp->SetOnClicked(make_button_handler(ManipulatorEventType::ICP_CLICKED));
+    merge->SetOnClicked(make_button_handler(ManipulatorEventType::MERGE_CLICKED));
+    read_matrix->SetOnClicked(make_button_handler(ManipulatorEventType::READ_MATRIX_CLICKED));
+    show_matrix->SetOnClicked(make_button_handler(ManipulatorEventType::SHOW_MATRIX_CLICKED));
 
     entries->SetOnValueChanged([this](const char* str, int i) {
         if (this->entries->GetNumberOfItems() == 0) return;
-        PointInfoEvent event_(this);
+        ManipulatorEvent event_(this);
         event_.entry_index = i;
-        event_.type = PointInfoEventType::INDEX_CHANGED;
+        event_.type = ManipulatorEventType::INDEX_CHANGED;
         this->handler(event_);
         });
 
     auto value_change_handler = ([this](double _d) {
         if (this->entries->GetNumberOfItems() == 0) return;
-        PointInfoEvent event_(this);
-        event_.type = PointInfoEventType::SLIDER_VALUE_CHANGED;
+        ManipulatorEvent event_(this);
+        event_.type = ManipulatorEventType::SLIDER_VALUE_CHANGED;
         this->handler(event_);
         });
 
@@ -196,8 +196,8 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
 
     auto slider_mouse_handler = ([this](const gui::MouseEvent& e) {
         if (e.type != gui::MouseEvent::Type::BUTTON_UP) return;
-        PointInfoEvent event_(this);
-        event_.type = PointInfoEventType::SLIDER_MOUSE_RELEASE;
+        ManipulatorEvent event_(this);
+        event_.type = ManipulatorEventType::SLIDER_MOUSE_RELEASE;
         this->handler(event_);
         });
 
@@ -210,16 +210,16 @@ PointInfo::PointInfo(int spacing, const gui::Margins& margins) : gui::Vert(spaci
 }
 
 
-void PointInfo::SetName(const char* name) {
+void Manipulator::SetName(const char* name) {
     this->entries->ChangeItem(this->entries->GetSelectedValue(), name);
     this->name_edit->SetText(name);
 }
 
-void PointInfo::SetEventHandler(std::function<void(PointInfoEvent&)> handler) {
+void Manipulator::SetEventHandler(std::function<void(ManipulatorEvent&)> handler) {
     this->handler = handler;
 }
 
-void PointInfo::ResetSliders() {
+void Manipulator::ResetSliders() {
     x_translation->SetValue(0.0);
     y_translation->SetValue(0.0);
     z_translation->SetValue(0.0);
@@ -228,10 +228,10 @@ void PointInfo::ResetSliders() {
     z_rotation->SetValue(0.0);
 }
 
-std::function<void(void)> PointInfo::make_button_handler(PointInfoEventType type) {
+std::function<void(void)> Manipulator::make_button_handler(ManipulatorEventType type) {
     auto button_handler = ([this, type]() {
         if (this->entries->GetNumberOfItems() == 0) return;
-        PointInfoEvent event_(this);
+        ManipulatorEvent event_(this);
         event_.type = type;
         this->handler(event_);
         });
