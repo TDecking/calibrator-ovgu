@@ -43,8 +43,7 @@ std::shared_ptr<gui::Dialog> CreateAboutDialog(gui::Window* window) {
     auto& theme = window->GetTheme();
     auto dlg = std::make_shared<gui::Dialog>("\xC3\x9C""ber"); // Über
 
-    auto title = std::make_shared<gui::Label>(
-        (std::string("Calibrator") + OPEN3D_VERSION).c_str());
+    auto title = std::make_shared<gui::Label>("Calibrator");
     auto text = std::make_shared<gui::Label>(
         "The MIT License (MIT)\n"
         "Copyright (c) 2023 Tobias Decking, Hannah Spinde\n\n"
@@ -70,6 +69,39 @@ std::shared_ptr<gui::Dialog> CreateAboutDialog(gui::Window* window) {
         "WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING "
         "FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR "
         "OTHER DEALINGS IN THE SOFTWARE.");
+    auto ok = std::make_shared<gui::Button>("OK");
+    ok->SetOnClicked([window]() { window->CloseDialog(); });
+
+    gui::Margins margins(theme.font_size);
+    auto layout = std::make_shared<gui::Vert>(0, margins);
+    layout->AddChild(gui::Horiz::MakeCentered(title));
+    layout->AddFixed(theme.font_size);
+    auto v = std::make_shared<gui::ScrollableVert>(0);
+    v->AddChild(text);
+    layout->AddChild(v);
+    layout->AddFixed(theme.font_size);
+    layout->AddChild(gui::Horiz::MakeCentered(ok));
+    dlg->AddChild(layout);
+
+    return dlg;
+}
+
+std::shared_ptr<gui::Dialog> CreateInstructionManualDialog(gui::Window* window) {
+    auto& theme = window->GetTheme();
+    auto dlg = std::make_shared<gui::Dialog>("Anleitung"); // Über
+
+    auto title = std::make_shared<gui::Label>("Anleitung");
+    auto text = std::make_shared<gui::Label>(
+        "Lade eine Punktewolke entweder durch das \"Datei\"-Men\xC3\xBC oder durch Drag and Drop der Datei in das Fenster.\n\n"
+        "Das Textfeld ändert den Namen der Wolke. Dieser Name wird auch bei der Ausgabe der Matrizen verwendet\n\n"
+        "Die Slider ändern Position und Ausrichtung der Wolke. Die Wolke wird dabei entweder um die gegebene Achse rotiert oder entlang der Achse bewegt.\n\n"
+        "\"Algorithmisches Ann\xC3\xA4hern\" verwendet den Iterative Closest Point-Algorithmus, um die gew\xC3\xA4""hlte Wolke gegenüber der einer anderen auszurichten.\n"
+        "Das Ergebnis ist im Idealfall eine perfekte \xC3\x9C""berschneidung. Dieser Algorithmus is rechenintensiv und wird einige Sekunden in Anspruch nehmen.\n\n"
+        "\"Verschmelzen\" nimmt die Ausgew\xC3\xA4hlte Punktewolke und eine andere und erzeugt eine dritte, große Puntkewolke.\n"
+        "Die verwendeten Namen und die angewandten Transformationen der alten Wolken werden in der neuen Wolke gespeichert.\n\n"
+        "\"Matrix Eingeben\" erlaubt die manuelle Definition einer Transformation. Wie die Punktewolke durch die Transformation beeinflusst wird, wird nicht \xC3\xBC""berpr\xC3\xBC""ft.\n"
+        "Zur Hilfestellung wird die Determinante der Transformationsmatrix ausgegeben.\n\n"
+        "\"Matrix Ausgeben\" gibt die aktuallen Transformationsmatrizen aus und erlaubt es, diese in einer Datei zu Speichern.\n");
     auto ok = std::make_shared<gui::Button>("OK");
     ok->SetOnClicked([window]() { window->CloseDialog(); });
 
@@ -273,7 +305,9 @@ void MainWindow::OnMenuItemSelected(gui::Menu::ItemId item_id) {
         ShowDialog(dlg);
         break;
     }
-    case HELP_DEBUG: {
+    case HELP_INSTRUCTION_MANUAL: {
+        auto dlg = CreateInstructionManualDialog(this);
+        ShowDialog(dlg);
         break;
     }
     case UNDO_TRANSFORMATION: {

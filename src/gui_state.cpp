@@ -87,6 +87,7 @@ void GuiState::init_menu() {
     help_menu->AddItem("Kamerainfo anzeigen", HELP_CAMERA);
     help_menu->AddSeparator();
     help_menu->AddItem("\xC3\x9C""ber", HELP_ABOUT); // Über
+    help_menu->AddItem("Anleitung", HELP_INSTRUCTION_MANUAL);
     help_menu->AddItem("Kontakt", HELP_CONTACT);
     menu->AddMenu("Hilfe", help_menu);
     app_menu = menu;
