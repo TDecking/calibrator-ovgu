@@ -359,7 +359,7 @@ void GuiState::init_point_info() {
                 Eigen::Matrix4d m = Eigen::Matrix4d::Zero();
 
                 for (int i = 0; i < 12; i++) {
-                    m(i) = editors->at(i)->GetDoubleValue();
+                    m(i / 4, i % 4) = editors->at(i)->GetDoubleValue();
                 }
 
                 m(3, 3) = 1.0;
