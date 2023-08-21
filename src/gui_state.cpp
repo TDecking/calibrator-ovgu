@@ -583,9 +583,14 @@ void GuiState::add_entry(const std::string& path, std::function<void(double)> up
     if (entry) {
         gui::Application::GetInstance().PostToMainThread(
             window, [this, window, entry, path]() {
+                while (std::any_of(this->loaded_entries.begin(), this->loaded_entries.end(),
+                    [&entry](std::shared_ptr<Entry>& e) { return e->name == entry->name; })) {
+                    entry->name.push_back('0');
+                }
+
                 this->loaded_entries.push_back(entry);
                 this->point_info->entries->AddItem(entry->name.c_str());
-                
+
                 this->current_entry = std::make_shared<Entry>(*entry);
                 this->colorize_current_entry();
                 this->entry_index = this->loaded_entries.size() - 1;
